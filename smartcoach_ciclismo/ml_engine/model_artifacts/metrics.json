@@ -1,0 +1,36 @@
+{
+  "cv_macro_f1": {
+    "RandomForest": 0.4396,
+    "XGBoost": 0.4354
+  },
+  "test_macro_f1": 0.4211,
+  "test_accuracy": 0.4469,
+  "confusion_matrix": [
+    [
+      839,
+      697,
+      519
+    ],
+    [
+      283,
+      190,
+      171
+    ],
+    [
+      52,
+      32,
+      388
+    ]
+  ],
+  "feature_importances": {
+    "age": 0.0117,
+    "bmi": 0.0214,
+    "training_intensity": 0.0501,
+    "training_duration": 0.0388,
+    "training_load": 0.0677,
+    "heart_rate": 0.0468,
+    "sleep_quality": 0.1384,
+    "recovery_score": 0.4782,
+    "fatigue_index": 0.147
+  }
+}
