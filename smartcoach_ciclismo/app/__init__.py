@@ -1,37 +1,41 @@
-from datetime import datetime
-from flask_login import UserMixin
-from werkzeug.security import generate_password_hash, check_password_hash
-from app import db, login_manager
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager
 
-class User(UserMixin, db.Model):
-    __tablename__ = 'users'
-
-    id = db.Column(db.Integer, primary_key=True)
-    full_name = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False, index=True)
-    password_hash = db.Column(db.String(255), nullable=False)
-    
-    # Biometric & Cycling Profiles
-    age = db.Column(db.Integer, nullable=False)
-    weight_kg = db.Column(db.Float, nullable=False)
-    height_cm = db.Column(db.Float, nullable=True)
-    discipline = db.Column(db.String(50), default='Road')     # Road, Track, MTB[cite: 4]
-    level = db.Column(db.String(50), default='Amateur')       # Recreational, Amateur, Elite[cite: 4]
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    # Relationships
-    workouts = db.relationship('Workout', backref='cyclist', lazy='dynamic', cascade='all, delete-orphan')
-    plans = db.relationship('TrainingPlan', backref='cyclist', lazy='dynamic', cascade='all, delete-orphan')
-
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
-
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
-
-    def __repr__(self):
-        return f"<User {self.full_name} - {self.email}>"
+db = SQLAlchemy()
+login_manager = LoginManager()
+login_manager.login_view = 'auth.login'
+login_manager.login_message_category = 'info'
 
 @login_manager.user_loader
 def load_user(user_id):
+    from app.models.user import User
     return User.query.get(int(user_id))
+
+def create_app():
+    app = Flask(__name__)
+    
+    app.config['SECRET_KEY'] = 'dev-key-secreta'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///smartcoach.db'
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+    db.init_app(app)
+    login_manager.init_app(app)
+
+    with app.app_context():
+        from app.models.user import User
+        from app.models.workout import Workout 
+        from app.models.plan import TrainingPlan, PlanDayDetail
+        db.create_all()
+
+    from app.controllers.main import main_bp
+    from app.controllers.auth import auth_bp
+    from app.controllers.workouts import workouts_bp
+    from app.controllers.plans import plans_bp  
+    
+    app.register_blueprint(main_bp)
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(workouts_bp)
+    app.register_blueprint(plans_bp)            
+
+    return app

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row mt-4">
+    <div class="col-md-8">
+        <h2>🚴‍♂️ Mis Entrenamientos</h2>
+        <p>Aquí se listarán tus sesiones guardadas.</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <!-- Este es el botón clave que llama a tu servicio de ML -->
+        <a href="{{ url_for('plans.generate_plan') }}" class="btn btn-warning btn-lg shadow">
+            🧠 Generar Plan Inteligente
+        </a>
+    </div>
+</div>
+{% endblock %}

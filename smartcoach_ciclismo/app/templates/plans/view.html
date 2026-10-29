@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card border-primary shadow mt-4">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h4 class="mb-0">Detalle de tu Plan de Entrenamiento 🚴‍♂️</h4>
+        <span class="badge bg-light text-primary">IA Completada</span>
+    </div>
+    <div class="card-body text-center p-5">
+        <h5 class="text-muted mb-4">Según el análisis de nuestro modelo predictivo, este es tu enfoque ideal:</h5>
+        
+        <h1 class="text-primary fw-bold mt-4 mb-2">{{ recomendacion }}</h1>
+        <p class="lead text-secondary mb-4 px-4">{{ descripcion }}</p>
+        
+        <hr class="my-4">
+        
+        <div class="row text-start mt-4">
+            <div class="col-md-6">
+                <p class="fw-bold mb-2 text-primary">Variables procesadas (Random Forest):</p>
+                <div class="bg-light p-3 rounded border">
+                    <ul class="list-unstyled mb-0">
+                        {% for key, value in datos.items() %}
+                            <li class="mb-1">✔️ <strong>{{ key }}:</strong> {{ value }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="col-md-6 mt-4 mt-md-0">
+                <p class="fw-bold mb-2 text-info">¿Cómo calcula la IA tu nivel?</p>
+                <div class="accordion shadow-sm" id="explicacionMetricas">
+                    
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseHoras" aria-expanded="true">
+                                ⏱️ Disponibilidad (Horas)
+                            </button>
+                        </h2>
+                        <div id="collapseHoras" class="accordion-collapse collapse show" data-bs-parent="#explicacionMetricas">
+                            <div class="accordion-body small text-muted">
+                                Es el factor principal. La Inteligencia Artificial sabe que un plan Avanzado exige más de 12 horas a la semana. Si cuentas con menos de 6 horas, te asignará un plan de Acondicionamiento Base para asegurar que puedas cumplirlo.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFC">
+                                ❤️ Frecuencia Cardíaca (Reposo)
+                            </button>
+                        </h2>
+                        <div id="collapseFC" class="accordion-collapse collapse" data-bs-parent="#explicacionMetricas">
+                            <div class="accordion-body small text-muted">
+                                Funciona como indicador de tu "motor" actual. Un corazón entrenado (nivel avanzado) bombea más sangre con menos esfuerzo, rondando los 40-55 lpm. Valores sobre 70 lpm inclinan a la IA a sugerir planes de intensidad moderada.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTSS">
+                                🔋 Experiencia (TSS)
+                            </button>
+                        </h2>
+                        <div id="collapseTSS" class="accordion-collapse collapse" data-bs-parent="#explicacionMetricas">
+                            <div class="accordion-body small text-muted">
+                                El Training Stress Score acumulado le dice al modelo cuánto castigo previo soportan tus músculos. Un TSS inicial de 0 indica que empiezas de cero, limitando las cargas máximas para proteger tus rodillas y articulaciones.
+                            </div>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-5">
+            <a href="{{ url_for('workouts.list_workouts') }}" class="btn btn-outline-secondary me-2">Volver al Dashboard</a>
+            <button class="btn btn-primary" disabled>Guardar Plan en BD (Próximamente)</button>
+        </div>
+    </div>
+</div>
+
+<!-- Script obligatorio en la misma vista para destrabar los acordeones de información -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6 text-center">
+        <h2 class="mb-3">Generador de Plan Inteligente 🧠</h2>
+        <p class="text-muted">Nuestra IA de Random Forest evaluará tu perfil fisiológico y disponibilidad de tiempo para asignarte tu categoría ideal.</p>
+        
+        <form action="{{ url_for('plans.generate_plan') }}" method="POST">
+            <button type="submit" class="btn btn-success btn-lg w-100 shadow mt-4">
+                ⚙️ Generar Mi Plan Ahora
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

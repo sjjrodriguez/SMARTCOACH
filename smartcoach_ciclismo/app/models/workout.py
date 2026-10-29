@@ -1,37 +1,20 @@
 from datetime import datetime
-from flask_login import UserMixin
-from werkzeug.security import generate_password_hash, check_password_hash
-from app import db, login_manager
+from app import db
 
-class User(UserMixin, db.Model):
-    __tablename__ = 'users'
+class Workout(db.Model):
+    __tablename__ = 'workouts'
+    __table_args__ = {'extend_existing': True}
 
     id = db.Column(db.Integer, primary_key=True)
-    full_name = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False, index=True)
-    password_hash = db.Column(db.String(255), nullable=False)
-    
-    # Biometric & Cycling Profiles
-    age = db.Column(db.Integer, nullable=False)
-    weight_kg = db.Column(db.Float, nullable=False)
-    height_cm = db.Column(db.Float, nullable=True)
-    discipline = db.Column(db.String(50), default='Road')     # Road, Track, MTB[cite: 4]
-    level = db.Column(db.String(50), default='Amateur')       # Recreational, Amateur, Elite[cite: 4]
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    # Relationships
-    workouts = db.relationship('Workout', backref='cyclist', lazy='dynamic', cascade='all, delete-orphan')
-    plans = db.relationship('TrainingPlan', backref='cyclist', lazy='dynamic', cascade='all, delete-orphan')
-
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
-
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    date = db.Column(db.Date, nullable=False, default=datetime.utcnow)
+    duration_min = db.Column(db.Integer, nullable=False)
+    distance_km = db.Column(db.Float, nullable=False)
+    elevation_gain_m = db.Column(db.Float, nullable=True, default=0.0)
+    rpe = db.Column(db.Integer, nullable=False)
+    perceived_fatigue = db.Column(db.Integer, nullable=True, default=1)
+    estimated_tss = db.Column(db.Float, nullable=True)
+    notes = db.Column(db.Text, nullable=True)
 
     def __repr__(self):
-        return f"<User {self.full_name} - {self.email}>"
-
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
+        return f"<Workout {self.date} - {self.distance_km}km>"
