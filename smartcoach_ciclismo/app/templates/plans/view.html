@@ -1,84 +1,46 @@
 {% extends "base.html" %}
+{% block title %}Plan semanal · SmartCoach{% endblock %}
+
 {% block content %}
-<div class="card border-primary shadow mt-4">
-    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-        <h4 class="mb-0">Detalle de tu Plan de Entrenamiento 🚴‍♂️</h4>
-        <span class="badge bg-light text-primary">IA Completada</span>
+{# TODO backend: pasar `plan` con name, category y days (7 elementos, de Lunes a Domingo).
+   Cada dia: day, type, duration_min (None si es descanso), description, rest (True/False).
+   Mientras no exista, se usa este plan de ejemplo. #}
+{% set plan = plan if plan is defined else {
+    'name': 'Plan base aeróbica',
+    'category': 'Intermedio',
+    'days': [
+        {'day': 'Lunes',     'type': 'Descanso',            'duration_min': none, 'description': 'Día libre para recuperar.', 'rest': true},
+        {'day': 'Martes',    'type': 'Rodaje aeróbico',     'duration_min': 60,   'description': 'Ritmo constante y conversacional en terreno plano.', 'rest': false},
+        {'day': 'Miércoles', 'type': 'Intervalos',          'duration_min': 75,   'description': 'Calentamiento, 5 repeticiones de 4 minutos fuertes y vuelta a la calma.', 'rest': false},
+        {'day': 'Jueves',    'type': 'Recuperación activa', 'duration_min': 40,   'description': 'Pedaleo muy suave con cadencia alta.', 'rest': false},
+        {'day': 'Viernes',   'type': 'Descanso',            'duration_min': none, 'description': 'Día libre. Hidratación y estiramientos.', 'rest': true},
+        {'day': 'Sábado',    'type': 'Fondo largo',         'duration_min': 150,  'description': 'Salida larga a ritmo moderado con hidratación cada 20 minutos.', 'rest': false},
+        {'day': 'Domingo',   'type': 'Rodaje suave',        'duration_min': 60,   'description': 'Pedaleo ligero para soltar las piernas.', 'rest': false}
+    ]
+} %}
+
+<div class="d-flex flex-column flex-md-row justify-content-md-between align-items-md-center gap-2 mb-4">
+    <div>
+        <h1 class="sc-h1 mb-1">{{ plan.name }}</h1>
+        <p class="sc-note mt-0">Categoría: <span class="badge text-bg-primary">{{ plan.category }}</span></p>
     </div>
-    <div class="card-body text-center p-5">
-        <h5 class="text-muted mb-4">Según el análisis de nuestro modelo predictivo, este es tu enfoque ideal:</h5>
-        
-        <h1 class="text-primary fw-bold mt-4 mb-2">{{ recomendacion }}</h1>
-        <p class="lead text-secondary mb-4 px-4">{{ descripcion }}</p>
-        
-        <hr class="my-4">
-        
-        <div class="row text-start mt-4">
-            <div class="col-md-6">
-                <p class="fw-bold mb-2 text-primary">Variables procesadas (Random Forest):</p>
-                <div class="bg-light p-3 rounded border">
-                    <ul class="list-unstyled mb-0">
-                        {% for key, value in datos.items() %}
-                            <li class="mb-1">✔️ <strong>{{ key }}:</strong> {{ value }}</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            </div>
-            
-            <div class="col-md-6 mt-4 mt-md-0">
-                <p class="fw-bold mb-2 text-info">¿Cómo calcula la IA tu nivel?</p>
-                <div class="accordion shadow-sm" id="explicacionMetricas">
-                    
-                    <div class="accordion-item">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseHoras" aria-expanded="true">
-                                ⏱️ Disponibilidad (Horas)
-                            </button>
-                        </h2>
-                        <div id="collapseHoras" class="accordion-collapse collapse show" data-bs-parent="#explicacionMetricas">
-                            <div class="accordion-body small text-muted">
-                                Es el factor principal. La Inteligencia Artificial sabe que un plan Avanzado exige más de 12 horas a la semana. Si cuentas con menos de 6 horas, te asignará un plan de Acondicionamiento Base para asegurar que puedas cumplirlo.
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="accordion-item">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFC">
-                                ❤️ Frecuencia Cardíaca (Reposo)
-                            </button>
-                        </h2>
-                        <div id="collapseFC" class="accordion-collapse collapse" data-bs-parent="#explicacionMetricas">
-                            <div class="accordion-body small text-muted">
-                                Funciona como indicador de tu "motor" actual. Un corazón entrenado (nivel avanzado) bombea más sangre con menos esfuerzo, rondando los 40-55 lpm. Valores sobre 70 lpm inclinan a la IA a sugerir planes de intensidad moderada.
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="accordion-item">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTSS">
-                                🔋 Experiencia (TSS)
-                            </button>
-                        </h2>
-                        <div id="collapseTSS" class="accordion-collapse collapse" data-bs-parent="#explicacionMetricas">
-                            <div class="accordion-body small text-muted">
-                                El Training Stress Score acumulado le dice al modelo cuánto castigo previo soportan tus músculos. Un TSS inicial de 0 indica que empiezas de cero, limitando las cargas máximas para proteger tus rodillas y articulaciones.
-                            </div>
-                        </div>
-                    </div>
-                    
-                </div>
-            </div>
-        </div>
-        
-        <div class="mt-5">
-            <a href="{{ url_for('workouts.list_workouts') }}" class="btn btn-outline-secondary me-2">Volver al Dashboard</a>
-            <button class="btn btn-primary" disabled>Guardar Plan en BD (Próximamente)</button>
-        </div>
-    </div>
+    <a href="{{ url_for('plans.generate_plan') }}" class="btn btn-outline-primary">Generar otro plan</a>
 </div>
 
-<!-- Script obligatorio en la misma vista para destrabar los acordeones de información -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-3">
+    {% for d in plan.days %}
+    <div class="col">
+        <div class="card sc-day h-100{% if d.rest %} sc-day--rest{% endif %}">
+            <div class="card-body">
+                <div class="sc-day__name">{{ d.day }}</div>
+                <h2 class="sc-day__type">{{ d.type }}</h2>
+                {% if not d.rest and d.duration_min %}
+                <div class="sc-day__meta">{{ d.duration_min }} min</div>
+                {% endif %}
+                <p class="sc-day__text">{{ d.description }}</p>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
 {% endblock %}

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Tu plan · SmartCoach{% endblock %}
+
+{% block content %}
+{# TODO backend: pasar `category` (resultado del modelo), `sessions_per_week`, `hours_per_week`
+   y `confidence` (0 a 100). Mientras no existan, se usan valores de ejemplo. #}
+{% set category = category if category is defined else 'Intermedio' %}
+{% set sessions_per_week = sessions_per_week if sessions_per_week is defined else 5 %}
+{% set hours_per_week = hours_per_week if hours_per_week is defined else 6.5 %}
+{% set confidence = confidence if confidence is defined else 82 %}
+
+<div class="row justify-content-center sc-action">
+    <div class="col-md-8 col-lg-6">
+        <div class="card">
+            <div class="card-body text-center">
+                <p class="sc-note mt-0 mb-1">Tu categoría asignada</p>
+                <h1 class="sc-h1 text-primary mb-3">{{ category }}</h1>
+                <p class="sc-note mb-0">
+                    El modelo evaluó tu perfil y tu disponibilidad para proponerte este nivel de entrenamiento.
+                </p>
+
+                <dl class="sc-stats text-start">
+                    <div>
+                        <dt>Sesiones por semana</dt>
+                        <dd>{{ sessions_per_week }}</dd>
+                    </div>
+                    <div>
+                        <dt>Horas por semana</dt>
+                        <dd>{{ hours_per_week }}<span class="unit">h</span></dd>
+                    </div>
+                    <div>
+                        <dt>Confianza del modelo</dt>
+                        <dd>{{ confidence }}<span class="unit">%</span></dd>
+                    </div>
+                </dl>
+
+                {# TODO backend: el boton "Guardar Plan en BD" esta oculto a proposito.
+                   Reactivarlo cuando la base de datos este conectada. #}
+
+                <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                    <a href="{{ url_for('plans.view_plan') }}" class="btn btn-primary">Ver plan semanal</a>
+                    <a href="{{ url_for('plans.generate_plan') }}" class="btn btn-outline-primary">Generar de nuevo</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

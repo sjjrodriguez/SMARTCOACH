@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Registrar sesión · SmartCoach{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center sc-action">
+    <div class="col-md-8 col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h1 class="sc-h1 mb-1">Registrar sesión</h1>
+                <p class="sc-note mb-4">Anota los datos de tu salida para calcular tu carga semanal.</p>
+
+                {# TODO backend: la ruta debe recibir este POST y guardar la sesion del usuario actual #}
+                {% set workout = {} %}
+                {% include 'components/_workout_form.html' %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

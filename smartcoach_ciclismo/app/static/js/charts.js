@@ -1,90 +1,76 @@
-// Graficas del dashboard con Chart.js.
-// Lee los datos del <script id="dashboard-data" type="application/json">.
+// Grafica de carga semanal (Chart.js).
+// Requiere en la vista: <canvas id="cargaSemanal"></canvas> y Chart.js cargado antes de este archivo.
 (function () {
     "use strict";
 
-    const dataEl = document.getElementById("dashboard-data");
-    if (!dataEl || typeof Chart === "undefined") return;
-
-    let data;
-    try {
-        data = JSON.parse(dataEl.textContent);
-    } catch (err) {
-        console.error("No se pudieron leer los datos del dashboard:", err);
+    var canvas = document.getElementById("cargaSemanal");
+    if (!canvas || typeof Chart === "undefined") {
         return;
     }
 
-    // Colores y fuente salen de style.css para que todo el sitio coincida.
-    const css = getComputedStyle(document.documentElement);
-    const token = (name, fallback) => css.getPropertyValue(name).trim() || fallback;
-    const primary = token("--sc-primary", "#0d6efd");
-    const ink = token("--sc-ink", "#1c2430");
-    const line = token("--sc-line", "#dde3ea");
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // Envuelve el canvas en .sc-chart (la altura se controla desde style.css).
+    if (!canvas.parentElement.classList.contains("sc-chart")) {
+        var wrap = document.createElement("div");
+        wrap.className = "sc-chart";
+        canvas.parentNode.insertBefore(wrap, canvas);
+        wrap.appendChild(canvas);
+    }
 
-    Chart.defaults.font.family = token("--sc-font", "system-ui, sans-serif");
-    Chart.defaults.font.size = 13;
-    Chart.defaults.color = ink;
-    Chart.defaults.animation = reduceMotion ? false : { duration: 500 };
-
-    const baseOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: { display: false },
-            tooltip: { callbacks: { label: (ctx) => ` Carga: ${ctx.parsed.y}` } },
-        },
-        scales: {
-            x: { grid: { display: false } },
-            y: {
-                beginAtZero: true,
-                grid: { color: line },
-                title: { display: true, text: "Carga de entrenamiento" },
-            },
-        },
+    // Lee los colores y la tipografia de las variables de style.css.
+    var css = getComputedStyle(document.documentElement);
+    function cssVar(name) {
+        return css.getPropertyValue(name).trim();
+    }
+    var colors = {
+        bar: cssVar("--sc-primary"),
+        text: cssVar("--sc-muted"),
+        grid: cssVar("--sc-line")
     };
 
-    // 1) Carga por dia: el dia de hoy (ultima barra) se resalta.
-    const dailyCanvas = document.getElementById("chart-daily");
-    if (dailyCanvas) {
-        const n = data.daily.values.length;
-        new Chart(dailyCanvas, {
-            type: "bar",
-            data: {
-                labels: data.daily.labels,
-                datasets: [{
-                    data: data.daily.values,
-                    backgroundColor: data.daily.values.map((_, i) => (i === n - 1 ? primary : primary + "88")),
-                    borderRadius: 4,
-                }],
-            },
-            options: baseOptions,
-        });
-    }
+    Chart.defaults.font.family = cssVar("--sc-font");
+    Chart.defaults.font.size = 14;
+    Chart.defaults.color = colors.text;
 
-    // 2) Carga por semana: tendencia de las ultimas 8 semanas.
-    const weeklyCanvas = document.getElementById("chart-weekly");
-    if (weeklyCanvas) {
-        new Chart(weeklyCanvas, {
-            type: "line",
-            data: {
-                labels: data.weekly.labels,
-                datasets: [{
-                    data: data.weekly.values,
-                    borderColor: primary,
-                    backgroundColor: primary,
-                    pointRadius: 4,
-                    borderWidth: 2,
-                    tension: 0.25,
-                }],
+    // TODO backend: definir window.cargaSemanal = {labels: [...], values: [...]} desde la plantilla
+    // (por ejemplo con {{ carga_semanal|tojson }}). Mientras no exista, se usan datos de ejemplo.
+    var datos = window.cargaSemanal || {
+        labels: ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"],
+        values: [0, 60, 75, 40, 0, 150, 60]
+    };
+
+    canvas.setAttribute("role", "img");
+    canvas.setAttribute("aria-label", "Gráfica de barras con los minutos entrenados cada día de la semana");
+
+    new Chart(canvas, {
+        type: "bar",
+        data: {
+            labels: datos.labels,
+            datasets: [{
+                label: "Carga (min)",
+                data: datos.values,
+                backgroundColor: colors.bar,
+                borderRadius: 4,
+                maxBarThickness: 48
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
             },
-            options: {
-                ...baseOptions,
-                scales: {
-                    ...baseOptions.scales,
-                    x: { grid: { display: false }, title: { display: true, text: "Semana (inicio)" } },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { color: colors.text }
                 },
-            },
-        });
-    }
+                y: {
+                    beginAtZero: true,
+                    grid: { color: colors.grid },
+                    ticks: { color: colors.text },
+                    title: { display: true, text: "Minutos", color: colors.text }
+                }
+            }
+        }
+    });
 })();

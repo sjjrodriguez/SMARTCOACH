@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Editar sesión · SmartCoach{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center sc-action">
+    <div class="col-md-8 col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <h1 class="sc-h1 mb-1">Editar sesión</h1>
+                <p class="sc-note mb-4">Corrige los datos de esta salida.</p>
+
+                {# TODO backend: pasar `workout` con la sesion real. Mientras tanto, valores de ejemplo. #}
+                {% set workout = workout if workout is defined else {
+                    'id': 3,
+                    'date': '2026-10-29',
+                    'duration_min': 120,
+                    'distance_km': 61.3,
+                    'rpe': 8
+                } %}
+                {% include 'components/_workout_form.html' %}
+
+                <hr class="my-4">
+
+                {# Formulario aparte: no va anidado dentro del formulario de edicion #}
+                {# TODO backend: la ruta de eliminar debe recibir POST #}
+                <form method="POST"
+                      action="{{ url_for('workouts.delete_workout', workout_id=workout.id) }}"
+                      onsubmit="return confirm('¿Eliminar esta sesión? Esta acción no se puede deshacer.');">
+                    <button type="submit" class="btn btn-outline-secondary">Eliminar sesión</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

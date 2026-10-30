@@ -1,0 +1,38 @@
+{# Formulario de sesion compartido por workouts/create.html y workouts/edit.html.
+   Variable opcional: `workout` (dict u objeto con date, duration_min, distance_km, rpe).
+   Sin `workout`, los campos salen vacios. El form envia POST a la misma URL de la pagina. #}
+{% set w = workout if workout is defined and workout else {} %}
+
+<form method="POST">
+    {# TODO backend: los name="" son provisionales; ajustarlos a models/workout.py #}
+    <div class="mb-3">
+        <label for="date" class="form-label">Fecha</label>
+        <input type="date" id="date" name="date" class="form-control"
+               value="{{ w.date or '' }}" required>
+    </div>
+
+    <div class="mb-3">
+        <label for="duration_min" class="form-label">Duración (minutos)</label>
+        <input type="number" id="duration_min" name="duration_min" class="form-control"
+               min="1" step="1" value="{{ w.duration_min or '' }}" required>
+    </div>
+
+    <div class="mb-3">
+        <label for="distance_km" class="form-label">Distancia (km)</label>
+        <input type="number" id="distance_km" name="distance_km" class="form-control"
+               min="0" step="0.1" value="{{ w.distance_km if w.distance_km is not none else '' }}" required>
+    </div>
+
+    <div class="mb-3">
+        <label for="rpe" class="form-label">Fatiga percibida (1 a 10)</label>
+        <input type="number" id="rpe" name="rpe" class="form-control"
+               min="1" max="10" step="1" value="{{ w.rpe or '' }}" required
+               aria-describedby="rpe-ayuda">
+        <div id="rpe-ayuda" class="form-text">1 es una sesión muy suave y 10 es el esfuerzo máximo.</div>
+    </div>
+
+    <div class="d-grid gap-2 d-sm-flex mt-4">
+        <button type="submit" class="btn btn-primary">Guardar</button>
+        <a href="{{ url_for('workouts.list_workouts') }}" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+</form>

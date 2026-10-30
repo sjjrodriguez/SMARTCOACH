@@ -147,3 +147,45 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
 }
 
 .sc-action .card-body { padding: 2rem; }
+/* ---------- Plan semanal (tarjeta de cada dia) ---------- */
+.sc-day {
+    background: var(--sc-surface);
+    border-color: var(--sc-line);
+}
+
+.sc-day__name {
+    font-size: .85rem;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--sc-primary);
+}
+
+.sc-day__type {
+    margin: .25rem 0 .25rem;
+    font-size: 1.15rem;
+    font-weight: 600;
+}
+
+.sc-day__meta {
+    margin-bottom: .5rem;
+    font-weight: 600;
+    color: var(--sc-ink);
+}
+
+.sc-day__text {
+    margin: 0;
+    font-size: .95rem;
+    color: var(--sc-muted);
+}
+
+/* Dia de descanso: mas tenue */
+.sc-day--rest {
+    background: transparent;
+    border-style: dashed;
+}
+
+.sc-day--rest .sc-day__name,
+.sc-day--rest .sc-day__type {
+    color: var(--sc-muted);
+}

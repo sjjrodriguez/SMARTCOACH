@@ -1,15 +1,67 @@
 {% extends "base.html" %}
+{% block title %}Entrenamientos · SmartCoach{% endblock %}
+
 {% block content %}
-<div class="row mt-4">
-    <div class="col-md-8">
-        <h2>🚴‍♂️ Mis Entrenamientos</h2>
-        <p>Aquí se listarán tus sesiones guardadas.</p>
-    </div>
-    <div class="col-md-4 text-end">
-        <!-- Este es el botón clave que llama a tu servicio de ML -->
-        <a href="{{ url_for('plans.generate_plan') }}" class="btn btn-warning btn-lg shadow">
-            🧠 Generar Plan Inteligente
-        </a>
+{# TODO backend: pasar `workouts` (lista de sesiones del usuario). Mientras no exista,
+   se usan los datos de ejemplo de abajo. Para probar el estado vacio, pasar workouts=[]. #}
+{% set sessions = workouts if workouts is defined else [
+    {'id': 1, 'date': '2026-10-26', 'duration_min': 90,  'distance_km': 42.5, 'rpe': 6},
+    {'id': 2, 'date': '2026-10-28', 'duration_min': 60,  'distance_km': 28.0, 'rpe': 4},
+    {'id': 3, 'date': '2026-10-29', 'duration_min': 120, 'distance_km': 61.3, 'rpe': 8}
+] %}
+
+<div class="d-flex flex-column flex-md-row justify-content-md-between align-items-md-center gap-3 mb-4">
+    <h1 class="sc-h1 mb-0">Mis entrenamientos</h1>
+    <div class="d-grid gap-2 d-sm-flex">
+        <a href="{{ url_for('workouts.create_workout') }}" class="btn btn-outline-primary">Registrar sesión</a>
+        <a href="{{ url_for('plans.generate_plan') }}" class="btn btn-primary">Generar plan inteligente</a>
     </div>
 </div>
+
+{% if sessions %}
+<div class="sc-panel">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th scope="col">Fecha</th>
+                    <th scope="col">Duración (min)</th>
+                    <th scope="col">Distancia (km)</th>
+                    <th scope="col">Fatiga</th>
+                    <th scope="col" class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {# TODO backend: si `date` es un objeto date/datetime se formatea; si es texto se muestra tal cual. #}
+                {% for w in sessions %}
+                <tr>
+                    <td>{{ w.date.strftime('%d/%m/%Y') if w.date.strftime is defined else w.date }}</td>
+                    <td>{{ w.duration_min }}</td>
+                    <td>{{ w.distance_km }}</td>
+                    <td>{{ w.rpe }}/10</td>
+                    <td class="text-end">
+                        <div class="d-inline-flex gap-2">
+                            <a href="{{ url_for('workouts.edit_workout', workout_id=w.id) }}"
+                               class="btn btn-sm btn-outline-primary">Editar</a>
+                            {# TODO backend: la ruta de eliminar debe recibir POST #}
+                            <form method="POST"
+                                  action="{{ url_for('workouts.delete_workout', workout_id=w.id) }}"
+                                  onsubmit="return confirm('¿Eliminar esta sesión? Esta acción no se puede deshacer.');">
+                                <button type="submit" class="btn btn-sm btn-outline-secondary">Eliminar</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="sc-panel text-center py-5">
+    <h2 class="sc-h2">Aún no tienes sesiones registradas</h2>
+    <p class="sc-note mb-4">Registra tu primera salida para ver tu carga semanal y generar un plan.</p>
+    <a href="{{ url_for('workouts.create_workout') }}" class="btn btn-primary">Registrar sesión</a>
+</div>
+{% endif %}
 {% endblock %}
