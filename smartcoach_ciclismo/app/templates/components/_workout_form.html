@@ -4,7 +4,7 @@
 {% set w = workout if workout is defined and workout else {} %}
 
 <form method="POST">
-    {# TODO backend: los name="" son provisionales; ajustarlos a models/workout.py #}
+    {# Los name="" coinciden con controllers/workouts.py. El controlador acepta ademas elevation_gain_m y notes (opcionales), que aun no tienen campo en este formulario. #}
     <div class="mb-3">
         <label for="date" class="form-label">Fecha</label>
         <input type="date" id="date" name="date" class="form-control"
@@ -24,11 +24,19 @@
     </div>
 
     <div class="mb-3">
-        <label for="rpe" class="form-label">Fatiga percibida (1 a 10)</label>
+        <label for="rpe" class="form-label">Esfuerzo percibido, RPE (1 a 10)</label>
         <input type="number" id="rpe" name="rpe" class="form-control"
                min="1" max="10" step="1" value="{{ w.rpe or '' }}" required
                aria-describedby="rpe-ayuda">
         <div id="rpe-ayuda" class="form-text">1 es una sesión muy suave y 10 es el esfuerzo máximo.</div>
+    </div>
+
+    <div class="mb-3">
+        <label for="perceived_fatigue" class="form-label">Fatiga percibida (1 a 10)</label>
+        <input type="number" id="perceived_fatigue" name="perceived_fatigue" class="form-control"
+               min="1" max="10" step="1" value="{{ w.perceived_fatigue or '' }}" required
+               aria-describedby="fatiga-ayuda">
+        <div id="fatiga-ayuda" class="form-text">Cómo te sentiste de cansado al terminar: 1 es nada y 10 es agotado.</div>
     </div>
 
     <div class="d-grid gap-2 d-sm-flex mt-4">

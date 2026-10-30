@@ -5,9 +5,9 @@
 {# TODO backend: pasar `workouts` (lista de sesiones del usuario). Mientras no exista,
    se usan los datos de ejemplo de abajo. Para probar el estado vacio, pasar workouts=[]. #}
 {% set sessions = workouts if workouts is defined else [
-    {'id': 1, 'date': '2026-10-26', 'duration_min': 90,  'distance_km': 42.5, 'rpe': 6},
-    {'id': 2, 'date': '2026-10-28', 'duration_min': 60,  'distance_km': 28.0, 'rpe': 4},
-    {'id': 3, 'date': '2026-10-29', 'duration_min': 120, 'distance_km': 61.3, 'rpe': 8}
+    {'id': 1, 'date': '2026-10-26', 'duration_min': 90,  'distance_km': 42.5, 'rpe': 6, 'perceived_fatigue': 5},
+    {'id': 2, 'date': '2026-10-28', 'duration_min': 60,  'distance_km': 28.0, 'rpe': 4, 'perceived_fatigue': 3},
+    {'id': 3, 'date': '2026-10-29', 'duration_min': 120, 'distance_km': 61.3, 'rpe': 8, 'perceived_fatigue': 7}
 ] %}
 
 <div class="d-flex flex-column flex-md-row justify-content-md-between align-items-md-center gap-3 mb-4">
@@ -38,7 +38,7 @@
                     <td>{{ w.date.strftime('%d/%m/%Y') if w.date.strftime is defined else w.date }}</td>
                     <td>{{ w.duration_min }}</td>
                     <td>{{ w.distance_km }}</td>
-                    <td>{{ w.rpe }}/10</td>
+                    <td>{{ w.perceived_fatigue }}/10</td>
                     <td class="text-end">
                         <div class="d-inline-flex gap-2">
                             <a href="{{ url_for('workouts.edit_workout', workout_id=w.id) }}"
