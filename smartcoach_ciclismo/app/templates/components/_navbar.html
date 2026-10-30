@@ -1,0 +1,35 @@
+<nav class="navbar navbar-expand-lg navbar-dark sc-navbar">
+    <div class="container">
+        <a class="navbar-brand" href="{{ url_for('main.index') }}">SmartCoach</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#scNavbar" aria-controls="scNavbar"
+                aria-expanded="false" aria-label="Abrir menú">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="scNavbar">
+            {% if current_user.is_authenticated %}
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}"
+                       href="{{ url_for('main.dashboard') }}">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.endpoint and request.endpoint.startswith('workouts.') %}active{% endif %}"
+                       href="{{ url_for('workouts.list_workouts') }}">Entrenamientos</a>
+                </li>
+                {# Agregar aqui el enlace a Planes cuando se confirme el nombre de su endpoint #}
+            </ul>
+            <div class="navbar-nav align-items-lg-center">
+                <span class="navbar-text text-white me-lg-3">Hola, {{ current_user.full_name }}</span>
+                <a class="nav-link" href="{{ url_for('auth.logout') }}">Salir</a>
+            </div>
+            {% else %}
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('auth.login') }}">Iniciar sesión</a>
+                <a class="nav-link" href="{{ url_for('auth.register') }}">Registrarse</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</nav>

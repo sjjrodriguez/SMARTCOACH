@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - SmartCoach{% endblock %}
+
+{% block content %}
+{% set r = data.risk %}
+{% set k = data.kpis %}
+
+<header class="mb-4">
+    <h1 class="sc-h1 mb-1">Tu semana</h1>
+    <p class="text-secondary mb-0">Resumen de tus últimos 7 días de entrenamiento.</p>
+</header>
+
+{# Semaforo de riesgo: el elemento principal del dashboard #}
+<section class="sc-risk" data-level="{{ r.level }}" aria-labelledby="risk-title">
+    <div>
+        <h2 class="sc-risk__title" id="risk-title">{{ r.label }}</h2>
+        <p class="sc-risk__message mb-0">{{ r.message }}</p>
+    </div>
+    <div class="sc-scale" role="img"
+         aria-label="Escala de riesgo de bajo a alto. Nivel actual: {{ r.label }}">
+        <span class="sc-scale__seg {% if r.level == 'low' %}is-active{% endif %}">Bajo</span>
+        <span class="sc-scale__seg {% if r.level == 'medium' %}is-active{% endif %}">Medio</span>
+        <span class="sc-scale__seg {% if r.level == 'high' %}is-active{% endif %}">Alto</span>
+    </div>
+</section>
+<p class="sc-note">
+    {% if r.ratio is not none %}
+        Tu carga de 7 días es {{ r.acute }} frente a un promedio semanal previo de {{ r.chronic_weekly }}
+        (relación {{ r.ratio }}).
+    {% endif %}
+    Es un indicador orientativo, no un diagnóstico médico.
+</p>
+
+{# Indicadores de la semana #}
+<dl class="sc-stats">
+    <div><dt>Sesiones</dt><dd>{{ k.sessions }}</dd></div>
+    <div><dt>Tiempo</dt><dd>{{ k.hours }}<span class="unit">h</span></dd></div>
+    <div><dt>Distancia</dt><dd>{{ k.km }}<span class="unit">km</span></dd></div>
+    <div><dt>Carga total</dt><dd>{{ k.load }}</dd></div>
+    <div><dt>Fatiga percibida</dt>
+        <dd>{% if k.fatigue is not none %}{{ k.fatigue }}{% else %}-{% endif %}</dd></div>
+</dl>
+
+{% if data.has_data %}
+<div class="row g-4">
+    <div class="col-lg-6">
+        <section class="sc-panel" aria-labelledby="daily-title">
+            <h2 class="sc-h2" id="daily-title">Carga por día</h2>
+            <div class="sc-chart">
+                <canvas id="chart-daily" role="img"
+                        aria-label="Gráfica de barras con la carga de entrenamiento de cada uno de los últimos 7 días"></canvas>
+            </div>
+        </section>
+    </div>
+    <div class="col-lg-6">
+        <section class="sc-panel" aria-labelledby="weekly-title">
+            <h2 class="sc-h2" id="weekly-title">Carga por semana</h2>
+            <div class="sc-chart">
+                <canvas id="chart-weekly" role="img"
+                        aria-label="Gráfica de línea con la carga semanal de las últimas 8 semanas"></canvas>
+            </div>
+        </section>
+    </div>
+</div>
+{% else %}
+<section class="sc-panel text-center py-5">
+    <h2 class="sc-h2">Aún no tienes sesiones registradas</h2>
+    <p class="text-secondary">Registra tu primer entrenamiento y aquí verás tu carga y tu nivel de riesgo.</p>
+    <a class="btn btn-primary" href="{{ url_for('workouts.list_workouts') }}">Ir a mis entrenamientos</a>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if data.has_data %}
+<script id="dashboard-data" type="application/json">{{ data.chart|tojson }}</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+{% endif %}
+{% endblock %}

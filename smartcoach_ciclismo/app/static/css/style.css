@@ -1,0 +1,149 @@
+/* ==========================================================
+   SmartCoach Ciclismo - estilos complementarios a Bootstrap 5
+   Todo el sitio usa estas variables: cambiar un color aqui
+   lo cambia en todas las vistas.
+   ========================================================== */
+:root {
+    --sc-font: "Barlow", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --sc-ink: #1c2430;
+    --sc-muted: #5b6778;
+    --sc-bg: #f3f5f8;
+    --sc-surface: #ffffff;
+    --sc-line: #dde3ea;
+    --sc-asphalt: #14181f;      /* navbar */
+    --sc-primary: #0d6efd;      /* mismo azul de las vistas existentes */
+    --sc-radius: .5rem;
+
+    /* Semaforo de riesgo: fondo, texto, barra y texto sobre la barra */
+    --sc-low-bg: #e7f4ec;    --sc-low-fg: #14532d;    --sc-low-bar: #1f8a4c;    --sc-low-on: #ffffff;
+    --sc-med-bg: #fdf3d7;    --sc-med-fg: #5c4000;    --sc-med-bar: #e0a100;    --sc-med-on: #231800;
+    --sc-high-bg: #fbe4e1;   --sc-high-fg: #7a1c14;   --sc-high-bar: #c8352b;   --sc-high-on: #ffffff;
+    --sc-none-bg: #e9edf2;   --sc-none-fg: #364152;   --sc-none-bar: #6b7788;   --sc-none-on: #ffffff;
+}
+
+body {
+    font-family: var(--sc-font);
+    font-size: 1.05rem;
+    color: var(--sc-ink);
+    background: var(--sc-bg);
+}
+
+h1, h2, h3, h4, .navbar-brand { font-family: var(--sc-font); font-weight: 600; }
+.sc-h1 { font-size: clamp(1.75rem, 3vw, 2.25rem); font-weight: 700; }
+.sc-h2 { font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; }
+
+/* ---------- Navbar y footer ---------- */
+.sc-navbar { background: var(--sc-asphalt); }
+.sc-navbar .navbar-brand { font-weight: 700; letter-spacing: .01em; }
+.sc-navbar .nav-link.active { color: #fff; font-weight: 600; box-shadow: inset 0 -2px 0 var(--sc-primary); }
+
+.sc-footer {
+    background: var(--sc-surface);
+    border-top: 1px solid var(--sc-line);
+    color: var(--sc-muted);
+    font-size: .9rem;
+}
+
+/* ---------- Componentes comunes ---------- */
+.card { border-color: var(--sc-line); border-radius: var(--sc-radius); }
+.sc-panel {
+    background: var(--sc-surface);
+    border: 1px solid var(--sc-line);
+    border-radius: var(--sc-radius);
+    padding: 1.25rem;
+    height: 100%;
+}
+.sc-chart { position: relative; height: 260px; }
+.sc-note { color: var(--sc-muted); font-size: .95rem; margin: .75rem 0 0; }
+
+a:focus-visible, button:focus-visible, .btn:focus-visible {
+    outline: 3px solid var(--sc-primary);
+    outline-offset: 2px;
+}
+
+/* ---------- Autenticacion (login y registro) ---------- */
+.sc-auth { margin-top: 3rem; }
+
+.sc-auth .card {
+    border: 0;
+    box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .1);
+}
+
+.sc-auth .card-header {
+    background: var(--sc-primary);
+    color: #fff;
+    font-weight: 700;
+    padding: .75rem 1rem;
+}
+
+.sc-auth .sc-subtitle {
+    margin: 1.5rem 0 1rem;
+    padding-bottom: .5rem;
+    border-bottom: 1px solid var(--sc-line);
+    color: var(--sc-primary);
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+/* ---------- Semaforo de riesgo ---------- */
+.sc-risk {
+    --lvl-bg: var(--sc-none-bg); --lvl-fg: var(--sc-none-fg);
+    --lvl-bar: var(--sc-none-bar); --lvl-on: var(--sc-none-on);
+    display: grid;
+    grid-template-columns: 1fr minmax(240px, 340px);
+    gap: 1.5rem;
+    align-items: center;
+    padding: 1.5rem 1.75rem;
+    background: var(--lvl-bg);
+    color: var(--lvl-fg);
+    border-left: .5rem solid var(--lvl-bar);
+    border-radius: var(--sc-radius);
+}
+.sc-risk[data-level="low"]    { --lvl-bg: var(--sc-low-bg);  --lvl-fg: var(--sc-low-fg);  --lvl-bar: var(--sc-low-bar);  --lvl-on: var(--sc-low-on); }
+.sc-risk[data-level="medium"] { --lvl-bg: var(--sc-med-bg);  --lvl-fg: var(--sc-med-fg);  --lvl-bar: var(--sc-med-bar);  --lvl-on: var(--sc-med-on); }
+.sc-risk[data-level="high"]   { --lvl-bg: var(--sc-high-bg); --lvl-fg: var(--sc-high-fg); --lvl-bar: var(--sc-high-bar); --lvl-on: var(--sc-high-on); }
+
+.sc-risk__title { font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 700; line-height: 1.1; margin: 0 0 .5rem; }
+.sc-risk__message { max-width: 52ch; }
+
+.sc-scale { display: grid; grid-template-columns: repeat(3, 1fr); gap: .35rem; }
+.sc-scale__seg {
+    padding: .55rem .25rem;
+    text-align: center;
+    font-weight: 600;
+    border-radius: .3rem;
+    background: rgba(255, 255, 255, .6);
+    opacity: .65;
+}
+.sc-scale__seg.is-active { opacity: 1; background: var(--lvl-bar); color: var(--lvl-on); }
+
+@media (max-width: 767.98px) {
+    .sc-risk { grid-template-columns: 1fr; padding: 1.25rem; }
+}
+
+/* ---------- Indicadores de la semana ---------- */
+.sc-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    margin: 1.5rem 0;
+    border-top: 1px solid var(--sc-line);
+    border-bottom: 1px solid var(--sc-line);
+}
+.sc-stats > div { padding: 1rem 1rem 1rem 0; }
+.sc-stats > div + div { padding-left: 1rem; border-left: 1px solid var(--sc-line); }
+.sc-stats dt { font-size: .95rem; font-weight: 500; color: var(--sc-muted); }
+.sc-stats dd { margin: 0; font-size: 2rem; font-weight: 700; line-height: 1.2; }
+.sc-stats .unit { margin-left: .25rem; font-size: 1rem; font-weight: 500; color: var(--sc-muted); }
+
+@media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+}
+/* ---------- Pagina de una sola accion (generar plan) ---------- */
+.sc-action { margin-top: 3rem; }
+
+.sc-action .card {
+    border: 0;
+    box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .1);
+}
+
+.sc-action .card-body { padding: 2rem; }
