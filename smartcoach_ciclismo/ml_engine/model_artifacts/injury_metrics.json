@@ -1,0 +1,34 @@
+{
+  "cv_macro_f1_mean": 0.4512,
+  "test_macro_f1": 0.4593,
+  "test_accuracy": 0.5169,
+  "majority_class_baseline": 0.6401,
+  "confusion_matrix": [
+    [
+      1051,
+      448,
+      475
+    ],
+    [
+      343,
+      144,
+      160
+    ],
+    [
+      48,
+      16,
+      399
+    ]
+  ],
+  "feature_importances": {
+    "training_intensity": 0.0697,
+    "training_duration": 0.0563,
+    "training_load": 0.0874,
+    "heart_rate": 0.0596,
+    "sleep_quality": 0.1591,
+    "recovery_score": 0.4188,
+    "fatigue_index": 0.1491
+  },
+  "n_train": 12336,
+  "n_test": 3084
+}

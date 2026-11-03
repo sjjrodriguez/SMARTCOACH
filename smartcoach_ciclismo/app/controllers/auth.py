@@ -1,3 +1,4 @@
+from urllib.parse import urlparse
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, current_user
 from app import db
@@ -5,49 +6,60 @@ from app.models.user import User
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
+MIN_PASSWORD = 8
+
+
+def _safe_next(target):
+    """Solo permite redirigir a rutas internas (evita open redirect)."""
+    if target and not urlparse(target).netloc and target.startswith('/'):
+        return target
+    return url_for('main.dashboard')
+
+
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated:
-        return redirect(url_for('workouts.list_workouts'))
-        
+        return redirect(url_for('main.dashboard'))
+
     if request.method == 'POST':
-        email = request.form.get('email')
-        if User.query.filter_by(email=email).first():
-            flash('El correo ya está registrado.')
-            return redirect(url_for('auth.register'))
-            
-        new_user = User(
-            full_name=request.form.get('full_name'),
-            email=email,
-            age=int(request.form.get('age', 18)),
-            weight_kg=float(request.form.get('weight_kg', 70.0)),
-            weekly_hours=float(request.form.get('weekly_hours', 5.0)),
-            resting_heart_rate=int(request.form.get('resting_heart_rate', 60)),
-            tss_acumulado=float(request.form.get('tss_acumulado', 0.0))
-        )
-        new_user.set_password(request.form.get('password'))
-        db.session.add(new_user)
-        db.session.commit()
-        
-        login_user(new_user)
-        return redirect(url_for('workouts.list_workouts'))
-        
+        full_name = (request.form.get('full_name') or '').strip()
+        email = (request.form.get('email') or '').strip().lower()
+        password = request.form.get('password') or ''
+
+        if not full_name or '@' not in email:
+            flash('Ingresa tu nombre y un correo válido.', 'danger')
+        elif len(password) < MIN_PASSWORD:
+            flash(f'La contraseña debe tener al menos {MIN_PASSWORD} caracteres.', 'danger')
+        elif User.query.filter_by(email=email).first():
+            flash('El correo ya está registrado.', 'danger')
+        else:
+            user = User(full_name=full_name, email=email)
+            user.set_password(password)
+            db.session.add(user)
+            db.session.commit()
+            login_user(user)
+            flash('Cuenta creada. Genera tu plan para comenzar.', 'success')
+            return redirect(url_for('plans.generate_plan'))
+
     return render_template('auth/register.html')
+
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('workouts.list_workouts'))
-        
+        return redirect(url_for('main.dashboard'))
+
     if request.method == 'POST':
-        user = User.query.filter_by(email=request.form.get('email')).first()
-        if user and user.check_password(request.form.get('password')):
+        email = (request.form.get('email') or '').strip().lower()
+        user = User.query.filter_by(email=email).first()
+        if user and user.check_password(request.form.get('password') or ''):
             login_user(user)
-            return redirect(url_for('workouts.list_workouts'))
-        flash('Correo o contraseña incorrectos.')
+            return redirect(_safe_next(request.args.get('next')))
+        flash('Correo o contraseña incorrectos.', 'danger')
     return render_template('auth/login.html')
 
-@auth_bp.route('/logout')
+
+@auth_bp.route('/logout', methods=['POST'])
 def logout():
     logout_user()
     return redirect(url_for('auth.login'))

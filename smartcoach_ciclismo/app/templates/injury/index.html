@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="sc-h1 mb-0">Seguimiento de lesiones</h2>
+    <a href="{{ url_for('injury.checkin') }}" class="btn btn-primary">Nuevo chequeo</a>
+</div>
+{% if checkins %}
+<div class="card mb-3"><div class="card-body">
+    <canvas id="injuryChart" height="90"></canvas>
+</div></div>
+<div class="card">
+    <table class="table mb-0">
+        <thead><tr><th>Fecha</th><th>Riesgo</th><th>Recuperación</th><th>Fatiga</th><th>Sueño</th><th>Carga (RPE×min)</th><th></th></tr></thead>
+        <tbody>
+        {% for c in checkins %}
+            <tr>
+                <td>{{ c.date.strftime('%d/%m/%Y') }}</td>
+                <td><span class="badge" style="background: var(--sc-{{ level_css[c.risk_level] }}-bar); color: var(--sc-{{ level_css[c.risk_level] }}-on);">{{ risk_text[c.risk_level][0] }}</span></td>
+                <td>{{ c.recovery_score }}</td><td>{{ c.fatigue_index }}</td><td>{{ c.sleep_quality }}</td><td>{{ c.training_load }}</td>
+                <td><a href="{{ url_for('injury.result', checkin_id=c.id) }}">Ver</a></td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="card"><div class="card-body text-center">
+    <p class="sc-note mb-3">Aún no tienes chequeos en los últimos 30 días.</p>
+    <a href="{{ url_for('injury.checkin') }}" class="btn btn-primary">Hacer mi primer chequeo</a>
+</div></div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+{% if checkins %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+const d = {{ chart|tojson }};
+new Chart(document.getElementById('injuryChart'), {
+  type: 'line',
+  data: { labels: d.labels, datasets: [
+    { label: 'Recuperación', data: d.recovery, borderColor: '#1f8a4c', tension: .3 },
+    { label: 'Fatiga', data: d.fatigue, borderColor: '#c8352b', tension: .3 } ] },
+  options: { scales: { y: { min: 0, max: 100 } } }
+});
+</script>
+{% endif %}
+{% endblock %}

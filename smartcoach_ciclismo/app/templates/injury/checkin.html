@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+{% set v = values if values else {} %}
+<div class="row justify-content-center sc-action">
+    <div class="col-md-9 col-lg-7">
+        <div class="card">
+            <div class="card-header">Seguimiento diario de lesiones</div>
+            <div class="card-body">
+                <p class="sc-note">Estos datos son los que más influyen en el riesgo de lesión.</p>
+                <form method="POST">
+                    <h6 class="sc-subtitle">¿Cómo amaneciste?</h6>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Recuperación (0-100)</label>
+                            <input type="number" name="recovery_score" min="0" max="100" class="form-control" value="{{ v.get('recovery_score','') }}" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Fatiga (0-100)</label>
+                            <input type="number" name="fatigue_index" min="0" max="100" class="form-control" value="{{ v.get('fatigue_index','') }}" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Calidad del sueño (1-10)</label>
+                            <input type="number" step="0.5" name="sleep_quality" min="1" max="10" class="form-control" value="{{ v.get('sleep_quality','') }}" required>
+                        </div>
+                    </div>
+                    <h6 class="sc-subtitle">Sesión de hoy</h6>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Esfuerzo RPE (1-10)</label>
+                            <input type="number" name="training_intensity" min="1" max="10" class="form-control" value="{{ v.get('training_intensity','') }}" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Duración (min)</label>
+                            <input type="number" name="training_duration" min="5" max="600" class="form-control" value="{{ v.get('training_duration','') }}" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">FC media (opcional)</label>
+                            <input type="number" name="heart_rate" min="30" max="220" class="form-control" value="{{ v.get('heart_rate','') }}">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Calcular riesgo</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

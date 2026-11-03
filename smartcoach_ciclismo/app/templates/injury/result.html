@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-9 col-lg-7">
+        <div class="card" style="background: var(--sc-{{ css }}-bg); color: var(--sc-{{ css }}-fg);">
+            <div class="card-body">
+                <h1 class="sc-h1">{{ label }}</h1>
+                <p class="mb-3">{{ message }}</p>
+                <p class="small mb-1">Probabilidades del modelo</p>
+                <ul class="list-unstyled mb-0">
+                    <li>Bajo: {{ (c.prob_low * 100)|round(0)|int }}%</li>
+                    <li>Medio: {{ (c.prob_medium * 100)|round(0)|int }}%</li>
+                    <li>Alto: {{ (c.prob_high * 100)|round(0)|int }}%</li>
+                </ul>
+            </div>
+        </div>
+        <div class="card mt-3">
+            <div class="card-header">Recomendaciones</div>
+            <ul class="list-group list-group-flush">
+                {% for t in tips %}<li class="list-group-item">{{ t }}</li>{% endfor %}
+            </ul>
+        </div>
+        <div class="mt-3">
+            <a href="{{ url_for('injury.index') }}" class="btn btn-outline-secondary me-2">Ver historial</a>
+            <a href="{{ url_for('injury.checkin') }}" class="btn btn-primary">Nuevo chequeo</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

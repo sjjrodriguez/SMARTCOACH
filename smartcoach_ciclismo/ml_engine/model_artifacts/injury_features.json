@@ -1,0 +1,26 @@
+{
+  "features": [
+    "training_intensity",
+    "training_duration",
+    "training_load",
+    "heart_rate",
+    "sleep_quality",
+    "recovery_score",
+    "fatigue_index"
+  ],
+  "classes": {
+    "0": "Low",
+    "1": "Medium",
+    "2": "High"
+  },
+  "medians": {
+    "training_intensity": 6.398,
+    "training_duration": 87.751,
+    "training_load": 643.397,
+    "heart_rate": 72.322,
+    "sleep_quality": 5.756,
+    "recovery_score": 54.458,
+    "fatigue_index": 57.356
+  },
+  "model_type": "RandomForest(class_weight=balanced)"
+}

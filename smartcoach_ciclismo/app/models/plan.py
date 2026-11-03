@@ -1,18 +1,32 @@
 from datetime import datetime
 from app import db
 
+
 class TrainingPlan(db.Model):
     __tablename__ = 'training_plans'
     __table_args__ = {'extend_existing': True}
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     start_date = db.Column(db.Date, nullable=False)
     end_date = db.Column(db.Date, nullable=False)
     total_volume_km = db.Column(db.Float, default=0.0)
     status = db.Column(db.String(30), default='Active')
 
+    # Datos que el ciclista ingresó al pedir el plan (los 5 del modelo)
+    age = db.Column(db.Integer, nullable=False)
+    weight_kg = db.Column(db.Float, nullable=False)
+    weekly_hours = db.Column(db.Float, nullable=False)
+    resting_heart_rate = db.Column(db.Integer, nullable=False)
+    tss_acumulado = db.Column(db.Float, nullable=False, default=0.0)
+
+    # Resultado del modelo
+    plan_label = db.Column(db.String(80), nullable=False)
+    description = db.Column(db.Text)
+
     daily_sessions = db.relationship('PlanDayDetail', backref='plan', lazy='dynamic')
+
 
 class PlanDayDetail(db.Model):
     __tablename__ = 'plan_day_details'

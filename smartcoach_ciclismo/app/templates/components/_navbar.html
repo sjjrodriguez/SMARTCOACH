@@ -18,11 +18,20 @@
                     <a class="nav-link {% if request.endpoint and request.endpoint.startswith('workouts.') %}active{% endif %}"
                        href="{{ url_for('workouts.list_workouts') }}">Entrenamientos</a>
                 </li>
-                {# Agregar aqui el enlace a Planes cuando se confirme el nombre de su endpoint #}
+                <li class="nav-item">
+                    <a class="nav-link {% if request.endpoint and request.endpoint.startswith('plans.') %}active{% endif %}"
+                       href="{{ url_for('plans.generate_plan') }}">Plan</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.endpoint and request.endpoint.startswith('injury.') %}active{% endif %}"
+                       href="{{ url_for('injury.index') }}">Lesiones</a>
+                </li>
             </ul>
             <div class="navbar-nav align-items-lg-center">
                 <span class="navbar-text text-white me-lg-3">Hola, {{ current_user.full_name }}</span>
-                <a class="nav-link" href="{{ url_for('auth.logout') }}">Salir</a>
+                <form method="POST" action="{{ url_for('auth.logout') }}" class="d-inline">
+                    <button type="submit" class="nav-link btn btn-link">Salir</button>
+                </form>
             </div>
             {% else %}
             <div class="navbar-nav ms-auto">

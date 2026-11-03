@@ -29,7 +29,7 @@ def create_workout():
             notes = request.form.get('notes', '')
 
             # Approximate TSS computation based on duration and RPE
-            estimated_tss = (duration_min * rpe * 1.1) / 10[cite: 5]
+            estimated_tss = (duration_min * rpe * 1.1) / 10
 
             new_workout = Workout(
                 user_id=current_user.id,
@@ -71,7 +71,7 @@ def edit_workout(workout_id):
             workout.rpe = int(request.form.get('rpe'))
             workout.perceived_fatigue = int(request.form.get('perceived_fatigue', 1))
             workout.notes = request.form.get('notes', '')
-            workout.estimated_tss = round((workout.duration_min * workout.rpe * 1.1) / 10, 2)[cite: 5]
+            workout.estimated_tss = round((workout.duration_min * workout.rpe * 1.1) / 10, 2)
 
             db.session.commit()
             flash('Workout updated successfully.', 'success')
