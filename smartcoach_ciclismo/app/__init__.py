@@ -1,4 +1,5 @@
 import os
+from dotenv import load_dotenv
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
@@ -6,6 +7,7 @@ from flask_login import LoginManager
 db = SQLAlchemy()
 login_manager = LoginManager()
 login_manager.login_view = 'auth.login'
+login_manager.login_message = 'Inicia sesión para continuar.'
 login_manager.login_message_category = 'info'
 
 @login_manager.user_loader
@@ -14,8 +16,9 @@ def load_user(user_id):
     return db.session.get(User, int(user_id))
 
 def create_app():
+    load_dotenv()  # lee SECRET_KEY y DATABASE_URL del archivo .env (si existe)
     app = Flask(__name__)
-    
+
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-key-secreta')
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///smartcoach.db')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False

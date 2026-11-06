@@ -5,6 +5,7 @@ from app import db
 from app.models.injury import InjuryCheckin
 from app.services.injury_service import (
     injury_predictor, parse_checkin, ValidationError, RISK_TEXT, LEVEL_CSS)
+from app.services.injury_cyclist_service import parse_profile, predict_injury
 
 injury_bp = Blueprint('injury', __name__, url_prefix='/injury')
 
@@ -48,6 +49,25 @@ def checkin():
     db.session.add(record)
     db.session.commit()
     return redirect(url_for('injury.result', checkin_id=record.id))
+
+
+@injury_bp.route('/perfil', methods=['GET', 'POST'])
+@login_required
+def profile():
+    """Modelo de ciclistas: probabilidad de antecedente de lesión según el perfil."""
+    if request.method == 'GET':
+        return render_template('injury/profile.html', values={}, result=None)
+
+    try:
+        data = parse_profile(request.form)
+        result = predict_injury(data)
+    except ValidationError as e:
+        flash(str(e), 'danger')
+        return render_template('injury/profile.html', values=request.form, result=None), 400
+    except Exception as e:
+        flash(f'No se pudo calcular el perfil: {e}', 'danger')
+        return render_template('injury/profile.html', values=request.form, result=None), 500
+    return render_template('injury/profile.html', values=request.form, result=result)
 
 
 @injury_bp.route('/<int:checkin_id>')

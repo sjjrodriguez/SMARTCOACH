@@ -1,33 +1,33 @@
 {
-  "cv_macro_f1_mean": 0.4512,
-  "test_macro_f1": 0.4593,
-  "test_accuracy": 0.5169,
+  "cv_macro_f1_mean": 0.4419,
+  "test_macro_f1": 0.4449,
+  "test_accuracy": 0.4744,
   "majority_class_baseline": 0.6401,
   "confusion_matrix": [
     [
-      1051,
-      448,
-      475
+      872,
+      615,
+      487
     ],
     [
-      343,
-      144,
-      160
+      293,
+      187,
+      167
     ],
     [
-      48,
-      16,
-      399
+      40,
+      19,
+      404
     ]
   ],
   "feature_importances": {
-    "training_intensity": 0.0697,
-    "training_duration": 0.0563,
-    "training_load": 0.0874,
-    "heart_rate": 0.0596,
-    "sleep_quality": 0.1591,
-    "recovery_score": 0.4188,
-    "fatigue_index": 0.1491
+    "training_intensity": 0.0642,
+    "training_duration": 0.0493,
+    "training_load": 0.0833,
+    "heart_rate": 0.0554,
+    "sleep_quality": 0.1604,
+    "recovery_score": 0.4382,
+    "fatigue_index": 0.1492
   },
   "n_train": 12336,
   "n_test": 3084

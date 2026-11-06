@@ -1,8 +1,11 @@
 import os
 import joblib
-import numpy as np
+import pandas as pd
 
 ARTIFACTS = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../ml_engine/model_artifacts'))
+
+# Mismo orden y nombres con los que se entrenó el escalador (train_model.py)
+FEATURES = ["age", "weight_kg", "weekly_hours", "resting_heart_rate", "tss_acumulado"]
 
 PLAN_LEVELS = {
     0: "Plan Principiante - Acondicionamiento Base",
@@ -40,7 +43,7 @@ class MLService:
     def predict_training_plan(self, age, weight, weekly_hours, resting_hr, tss):
         """Devuelve (clase, etiqueta, descripcion)."""
         self._load()
-        features = np.array([[age, weight, weekly_hours, resting_hr, tss]])
+        features = pd.DataFrame([[age, weight, weekly_hours, resting_hr, tss]], columns=FEATURES)
         cls = int(self.model.predict(self.scaler.transform(features))[0])
         return cls, PLAN_LEVELS.get(cls, PLAN_LEVELS[0]), PLAN_DESCRIPTIONS.get(cls, PLAN_DESCRIPTIONS[0])
 

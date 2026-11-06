@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% macro num(v, name, label, min, max, step='1', req=True) %}
+<div class="col-md-4 mb-3">
+    <label class="form-label">{{ label }}{% if not req %} (opcional){% endif %}</label>
+    <input type="number" name="{{ name }}" min="{{ min }}" max="{{ max }}" step="{{ step }}" class="form-control"
+           value="{{ v.get(name, '') }}" {% if req %}required{% endif %}>
+</div>
+{% endmacro %}
+{% macro sel(v, name, label, options) %}
+<div class="col-md-4 mb-3">
+    <label class="form-label">{{ label }}</label>
+    <select name="{{ name }}" class="form-select">
+        <option value="">No sé / prefiero no decir</option>
+        {% for code, text in options %}
+        <option value="{{ code }}" {% if v.get(name) == code|string %}selected{% endif %}>{{ text }}</option>
+        {% endfor %}
+    </select>
+</div>
+{% endmacro %}
+{% macro chk(v, name, label) %}
+<div class="col-md-4 mb-3">
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="{{ name }}" id="{{ name }}" value="1"
+               {% if v.get(name) %}checked{% endif %}>
+        <label class="form-check-label" for="{{ name }}">{{ label }}</label>
+    </div>
+</div>
+{% endmacro %}
+{% block content %}
+{% set v = values if values else {} %}
+<div class="row justify-content-center sc-action">
+    <div class="col-md-10 col-lg-8">
+        {% if result %}
+        <div class="card mb-3" style="background: var(--sc-{{ result.css }}-bg); color: var(--sc-{{ result.css }}-fg);">
+            <div class="card-body">
+                <h1 class="sc-h1">{{ result.label }}</h1>
+                <p class="mb-3">{{ result.message }}</p>
+                <p class="mb-0">Probabilidad estimada de antecedente de lesión:
+                    <strong>{{ (result.prob_injury * 100)|round(0)|int }}%</strong></p>
+            </div>
+        </div>
+        {% endif %}
+        <div class="card">
+            <div class="card-header">Perfil de ciclista</div>
+            <div class="card-body">
+                <p class="sc-note">Estima la probabilidad de haber tenido lesiones según tu perfil. Es orientativo.</p>
+                <form method="POST">
+                    <h6 class="sc-subtitle">Datos personales</h6>
+                    <div class="row">
+                        {{ num(v, 'Age', 'Edad', 10, 90) }}
+                        {{ num(v, 'Height', 'Estatura (cm)', 120, 220) }}
+                        {{ num(v, 'Bodymass', 'Peso (kg)', 30, 200, '0.1') }}
+                        {{ sel(v, 'Gender', 'Género', [(0, 'Mujer'), (1, 'Hombre')]) }}
+                    </div>
+                    <h6 class="sc-subtitle">Tu ciclismo</h6>
+                    <div class="row">
+                        {{ num(v, 'Frequency_cycling', 'Salidas por semana', 1, 14) }}
+                        {{ num(v, 'Hours_week_cycling', 'Horas por semana', 0.5, 60, '0.5') }}
+                        {{ num(v, 'Km_week', 'Km por semana', 0, 2000) }}
+                        {{ num(v, 'Experience', 'Años de experiencia', 0, 70) }}
+                        {{ num(v, 'Speed', 'Velocidad media (km/h)', 5, 70, '0.5', False) }}
+                        {{ num(v, 'TOTALKM', 'Km semanales totales', 0, 3000, '1', False) }}
+                        {{ sel(v, 'Discipline', 'Disciplina', [(1, 'Ruta / pista'), (2, 'Montaña (MTB)'), (3, 'Triatlón')]) }}
+                        {{ sel(v, 'Purpose', 'Objetivo', [(1, 'Competición profesional'), (2, 'Competición aficionada'), (3, 'Recreación')]) }}
+                        {{ sel(v, 'Terrain', 'Terreno', [(1, 'Carretera / ciudad'), (2, 'Trocha / sendero')]) }}
+                        {{ sel(v, 'Coach', 'Entrenador', [(0, 'No'), (1, 'Sí')]) }}
+                    </div>
+                    <h6 class="sc-subtitle">Tu bicicleta</h6>
+                    <div class="row">
+                        {{ sel(v, 'Bike_quality', 'Calidad de la bici', [(1, 'Gama baja'), (2, 'Gama media'), (3, 'Gama alta')]) }}
+                        {{ sel(v, 'Comfort_saddle', 'Comodidad del sillín', [(2, 'Cómodo'), (3, 'Incómodo')]) }}
+                        {{ sel(v, 'Comfort_posture', 'Comodidad de la postura', [(2, 'Cómoda'), (3, 'Incómoda')]) }}
+                    </div>
+                    <h6 class="sc-subtitle">Complementas con</h6>
+                    <div class="row">
+                        {{ chk(v, 'Training_core', 'Core') }}
+                        {{ chk(v, 'Training_flexibility', 'Flexibilidad') }}
+                        {{ chk(v, 'Training_strength', 'Fuerza / pesas') }}
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Calcular</button>
+                </form>
+            </div>
+        </div>
+        <div class="mt-3">
+            <a href="{{ url_for('injury.index') }}" class="btn btn-outline-secondary">Volver a lesiones</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
