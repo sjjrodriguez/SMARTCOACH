@@ -8,13 +8,11 @@ auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 MIN_PASSWORD = 8
 
-
 def _safe_next(target):
     """Solo permite redirigir a rutas internas (evita open redirect)."""
     if target and not urlparse(target).netloc and target.startswith('/'):
         return target
     return url_for('main.dashboard')
-
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
@@ -27,22 +25,21 @@ def register():
         password = request.form.get('password') or ''
 
         if not full_name or '@' not in email:
-            flash('Ingresa tu nombre y un correo válido.', 'danger')
+            flash('Please enter your full name and a valid email.', 'danger')
         elif len(password) < MIN_PASSWORD:
-            flash(f'La contraseña debe tener al menos {MIN_PASSWORD} caracteres.', 'danger')
+            flash(f'Password must be at least {MIN_PASSWORD} characters long.', 'danger')
         elif User.query.filter_by(email=email).first():
-            flash('El correo ya está registrado.', 'danger')
+            flash('This email is already registered.', 'danger')
         else:
             user = User(full_name=full_name, email=email)
             user.set_password(password)
             db.session.add(user)
             db.session.commit()
             login_user(user)
-            flash('Cuenta creada. Genera tu plan para comenzar.', 'success')
+            flash('Account created! Generate your plan to get started.', 'success')
             return redirect(url_for('plans.generate_plan'))
 
     return render_template('auth/register.html')
-
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -55,9 +52,8 @@ def login():
         if user and user.check_password(request.form.get('password') or ''):
             login_user(user)
             return redirect(_safe_next(request.args.get('next')))
-        flash('Correo o contraseña incorrectos.', 'danger')
+        flash('Invalid email or password.', 'danger')
     return render_template('auth/login.html')
-
 
 @auth_bp.route('/logout', methods=['POST'])
 def logout():

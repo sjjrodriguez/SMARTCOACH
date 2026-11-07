@@ -16,11 +16,15 @@ def load_user(user_id):
     return db.session.get(User, int(user_id))
 
 def create_app():
-    load_dotenv()  # lee SECRET_KEY y DATABASE_URL del archivo .env (si existe)
+    # Carga las variables del archivo .env (incluyendo tu DATABASE_URL de Supabase)
+    load_dotenv()  
+    
     app = Flask(__name__)
 
-    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-key-secreta')
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///smartcoach.db')
+    app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-key-secreta')
+    
+    # Toma la URL de Supabase. Si no encuentra el .env, usará sqlite localmente.
+    app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql+psycopg://postgres.sjsmwccpkrgkcgsdashw:TANIABELTRAN1864@aws-0-us-east-1.pooler.supabase.com:6543/postgres"
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     db.init_app(app)
@@ -31,6 +35,9 @@ def create_app():
         from app.models.workout import Workout 
         from app.models.plan import TrainingPlan, PlanDayDetail
         from app.models.injury import InjuryCheckin
+        
+        # Al ejecutar la app por primera vez, esto creará automáticamente 
+        # todas estas tablas directamente en tu proyecto de Supabase
         db.create_all()
 
     from app.controllers.main import main_bp

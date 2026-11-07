@@ -3,7 +3,7 @@
         <a class="navbar-brand" href="{{ url_for('main.index') }}">SmartCoach</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
                 data-bs-target="#scNavbar" aria-controls="scNavbar"
-                aria-expanded="false" aria-label="Abrir menú">
+                aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
 
@@ -16,7 +16,7 @@
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {% if request.endpoint and request.endpoint.startswith('workouts.') %}active{% endif %}"
-                       href="{{ url_for('workouts.list_workouts') }}">Entrenamientos</a>
+                       href="{{ url_for('workouts.list_workouts') }}">Workouts</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {% if request.endpoint and request.endpoint.startswith('plans.') %}active{% endif %}"
@@ -24,19 +24,19 @@
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {% if request.endpoint and request.endpoint.startswith('injury.') %}active{% endif %}"
-                       href="{{ url_for('injury.index') }}">Lesiones</a>
+                       href="{{ url_for('injury.index') }}">Injuries</a>
                 </li>
             </ul>
             <div class="navbar-nav align-items-lg-center">
-                <span class="navbar-text text-white me-lg-3">Hola, {{ current_user.full_name }}</span>
+                <span class="navbar-text text-white me-lg-3">Hello, {{ current_user.full_name }}</span>
                 <form method="POST" action="{{ url_for('auth.logout') }}" class="d-inline">
-                    <button type="submit" class="nav-link btn btn-link">Salir</button>
+                    <button type="submit" class="nav-link btn btn-link">Logout</button>
                 </form>
             </div>
             {% else %}
             <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="{{ url_for('auth.login') }}">Iniciar sesión</a>
-                <a class="nav-link" href="{{ url_for('auth.register') }}">Registrarse</a>
+                <a class="nav-link" href="{{ url_for('auth.login') }}">Sign In</a>
+                <a class="nav-link" href="{{ url_for('auth.register') }}">Sign Up</a>
             </div>
             {% endif %}
         </div>
