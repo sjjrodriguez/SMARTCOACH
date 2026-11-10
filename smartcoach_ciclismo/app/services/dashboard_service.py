@@ -13,21 +13,21 @@ solo necesita el diccionario con las claves level, label y message.
 """
 from datetime import date, datetime, timedelta
 
-DAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
+DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
 RISK_TEXT = {
-    "low": ("Riesgo bajo",
-            "Tu carga de esta semana está dentro de lo que tu cuerpo ya tolera. "
-            "Mantén tu plan."),
-    "medium": ("Riesgo medio",
-               "Tu carga de esta semana subió más de lo habitual. "
-               "Prioriza el descanso y el sueño."),
-    "high": ("Riesgo alto",
-             "Tu carga de esta semana es muy superior a la de las últimas semanas. "
-             "Baja la intensidad y descansa antes de tu próxima sesión fuerte."),
-    "none": ("Sin datos suficientes",
-             "Registra al menos una semana de entrenamientos anteriores "
-             "para estimar tu riesgo."),
+    "low": ("Low risk",
+            "Your load this week is within what your body already tolerates. "
+            "Keep following your plan."),
+    "medium": ("Medium risk",
+               "Your load this week rose more than usual. "
+               "Prioritize rest and sleep."),
+    "high": ("High risk",
+             "Your load this week is much higher than in recent weeks. "
+             "Lower the intensity and rest before your next hard session."),
+    "none": ("Not enough data",
+             "Log workouts from at least one earlier week "
+             "to estimate your risk."),
 }
 
 
@@ -85,7 +85,7 @@ def build_dashboard_data(workouts, today=None):
     for k in range(7, -1, -1):
         end = today - timedelta(days=7 * k)
         start = end - timedelta(days=6)
-        weekly["labels"].append(f"{start.day:02d}/{start.month:02d}")
+        weekly["labels"].append(f"{start:%b} {start.day}")
         weekly["values"].append(round(_load_between(workouts, start, end)))
 
     # --- Semaforo ---

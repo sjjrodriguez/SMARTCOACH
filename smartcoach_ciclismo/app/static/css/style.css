@@ -147,3 +147,62 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
 }
 
 .sc-action .card-body { padding: 2rem; }
+/* ---------- Page headers (title on the left, actions on the right) ---------- */
+.sc-page-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 1rem;
+}
+.sc-page-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+
+/* Section titles inside forms (also used outside the auth pages) */
+.sc-subtitle {
+    margin: 1.5rem 0 1rem;
+    padding-bottom: .5rem;
+    border-bottom: 1px solid var(--sc-line);
+    color: var(--sc-primary);
+    font-size: 1rem;
+    font-weight: 600;
+}
+.sc-subtitle:first-child { margin-top: .5rem; }
+
+.form-text { font-size: .85rem; }
+details.sc-note summary { cursor: pointer; }
+
+/* ---------- Tables ---------- */
+.table > thead th {
+    font-size: .85rem;
+    font-weight: 600;
+    color: var(--sc-muted);
+    white-space: nowrap;
+}
+.sc-notes-cell {
+    max-width: 16rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ---------- Risk probabilities (injury check-in result) ---------- */
+.sc-prob {
+    display: grid;
+    grid-template-columns: 4.5rem 1fr 3rem;
+    align-items: center;
+    gap: .75rem;
+    margin-bottom: .5rem;
+}
+.sc-prob .progress { height: .75rem; background: rgba(255, 255, 255, .65); }
+.sc-prob__pct { text-align: right; font-weight: 600; }
+
+/* Visible "skip to content" link for keyboard users */
+.visually-hidden-focusable:focus {
+    position: fixed;
+    top: .5rem;
+    left: .5rem;
+    z-index: 2000;
+    padding: .5rem 1rem;
+    background: var(--sc-surface);
+    border-radius: var(--sc-radius);
+}

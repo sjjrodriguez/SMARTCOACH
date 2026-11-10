@@ -32,14 +32,14 @@
         maintainAspectRatio: false,
         plugins: {
             legend: { display: false },
-            tooltip: { callbacks: { label: (ctx) => ` Carga: ${ctx.parsed.y}` } },
+            tooltip: { callbacks: { label: (ctx) => ` Load: ${ctx.parsed.y}` } },
         },
         scales: {
             x: { grid: { display: false } },
             y: {
                 beginAtZero: true,
                 grid: { color: line },
-                title: { display: true, text: "Carga de entrenamiento" },
+                title: { display: true, text: "Training load" },
             },
         },
     };
@@ -82,7 +82,7 @@
                 ...baseOptions,
                 scales: {
                     ...baseOptions.scales,
-                    x: { grid: { display: false }, title: { display: true, text: "Semana (inicio)" } },
+                    x: { grid: { display: false }, title: { display: true, text: "Week starting" } },
                 },
             },
         });

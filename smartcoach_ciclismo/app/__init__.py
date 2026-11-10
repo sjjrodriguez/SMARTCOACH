@@ -7,7 +7,7 @@ from flask_login import LoginManager
 db = SQLAlchemy()
 login_manager = LoginManager()
 login_manager.login_view = 'auth.login'
-login_manager.login_message = 'Inicia sesión para continuar.'
+login_manager.login_message = 'Please sign in to continue.'
 login_manager.login_message_category = 'info'
 
 @login_manager.user_loader
@@ -24,7 +24,7 @@ def create_app():
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-key-secreta')
     
     # Toma la URL de Supabase. Si no encuentra el .env, usará sqlite localmente.
-    app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql+psycopg://postgres.sjsmwccpkrgkcgsdashw:TANIABELTRAN1864@aws-0-us-east-1.pooler.supabase.com:6543/postgres"
+    app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql+psycopg2://postgres.sjsmwccpkrgkcgsdashw:TANIABELTRAN1864@aws-0-us-east-1.pooler.supabase.com:6543/postgres"
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     db.init_app(app)

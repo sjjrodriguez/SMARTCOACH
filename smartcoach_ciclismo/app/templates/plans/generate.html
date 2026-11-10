@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% block title %}Training Plan - SmartCoach{% endblock %}
 {% block content %}
 {% set v = values if values else {} %}
 {% set l = last %}
@@ -6,41 +7,44 @@
     <div class="col-md-9 col-lg-7">
         <div class="card">
             <div class="card-body">
-                <h1 class="sc-h1 mb-2 text-center">Generador de Plan Inteligente</h1>
+                <h1 class="sc-h1 mb-2 text-center">Smart Training Plan Generator</h1>
                 <p class="sc-note mb-4 text-center">
-                    Ingresa tus datos actuales: el modelo de Random Forest evaluará tu perfil
-                    y te asignará tu categoría ideal.
+                    Enter your current data. A Random Forest model will assess your profile
+                    and assign the plan level that fits you best.
                 </p>
                 <form method="POST">
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Edad</label>
-                            <input type="number" name="age" min="10" max="90" class="form-control"
+                            <label for="age" class="form-label">Age</label>
+                            <input type="number" id="age" name="age" min="10" max="90" class="form-control"
                                    value="{{ v.get('age', l.age if l else '') }}" required>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Peso (kg)</label>
-                            <input type="number" step="0.1" name="weight_kg" min="30" max="200" class="form-control"
+                            <label for="weight_kg" class="form-label">Weight (kg)</label>
+                            <input type="number" id="weight_kg" step="0.1" name="weight_kg" min="30" max="200" class="form-control"
                                    value="{{ v.get('weight_kg', l.weight_kg if l else '') }}" required>
                         </div>
                         <div class="col-md-4 mb-3">
-                            <label class="form-label">Horas / semana</label>
-                            <input type="number" step="0.1" name="weekly_hours" min="0.5" max="40" class="form-control"
-                                   value="{{ v.get('weekly_hours', l.weekly_hours if l else '') }}" required>
+                            <label for="weekly_hours" class="form-label">Hours per week</label>
+                            <input type="number" id="weekly_hours" step="0.1" name="weekly_hours" min="0.5" max="40" class="form-control"
+                                   value="{{ v.get('weekly_hours', l.weekly_hours if l else '') }}" aria-describedby="hours-help" required>
+                            <div id="hours-help" class="form-text">Hours you can train each week.</div>
                         </div>
                         <div class="col-md-4 mb-3">
-                            <label class="form-label">FC reposo (lpm)</label>
-                            <input type="number" name="resting_heart_rate" min="30" max="120" class="form-control"
-                                   value="{{ v.get('resting_heart_rate', l.resting_heart_rate if l else '') }}" required>
+                            <label for="resting_heart_rate" class="form-label">Resting heart rate (bpm)</label>
+                            <input type="number" id="resting_heart_rate" name="resting_heart_rate" min="30" max="120" class="form-control"
+                                   value="{{ v.get('resting_heart_rate', l.resting_heart_rate if l else '') }}" aria-describedby="hr-help" required>
+                            <div id="hr-help" class="form-text">Measured when you wake up.</div>
                         </div>
                         <div class="col-md-4 mb-3">
-                            <label class="form-label">TSS acumulado</label>
-                            <input type="number" step="0.1" name="tss_acumulado" min="0" class="form-control"
-                                   value="{{ v.get('tss_acumulado', l.tss_acumulado if l else 0) }}" required>
+                            <label for="tss_acumulado" class="form-label">Accumulated TSS</label>
+                            <input type="number" id="tss_acumulado" step="0.1" name="tss_acumulado" min="0" class="form-control"
+                                   value="{{ v.get('tss_acumulado', l.tss_acumulado if l else 0) }}" aria-describedby="tss-help" required>
+                            <div id="tss-help" class="form-text">Training Stress Score. Enter 0 if you don't track it.</div>
                         </div>
                     </div>
-                    {% if l %}<p class="sc-note">Prellenado con tu último plan; actualízalo si cambió.</p>{% endif %}
-                    <button type="submit" class="btn btn-primary btn-lg w-100">Generar mi plan ahora</button>
+                    {% if l %}<p class="sc-note">Pre-filled from your last plan; update anything that has changed.</p>{% endif %}
+                    <button type="submit" class="btn btn-primary btn-lg w-100">Generate my plan</button>
                 </form>
             </div>
         </div>

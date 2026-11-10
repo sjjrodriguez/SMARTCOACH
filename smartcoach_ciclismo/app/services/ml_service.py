@@ -8,18 +8,18 @@ ARTIFACTS = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../ml_en
 FEATURES = ["age", "weight_kg", "weekly_hours", "resting_heart_rate", "tss_acumulado"]
 
 PLAN_LEVELS = {
-    0: "Plan Principiante - Acondicionamiento Base",
-    1: "Plan Moderado - Desarrollo y Umbral",
-    2: "Plan Avanzado - Alto Rendimiento",
+    0: "Beginner Plan - Base Conditioning",
+    1: "Moderate Plan - Development and Threshold",
+    2: "Advanced Plan - High Performance",
 }
 
 PLAN_DESCRIPTIONS = {
-    0: "Enfoque en construir base aeróbica. Salidas de 1 a 2 horas a ritmo suave "
-       "para acostumbrar el cuerpo y prevenir lesiones.",
-    1: "Enfoque en mejorar tu velocidad crucero. Balancea el fondo aeróbico "
-       "(Zona 2) con estímulos al umbral de lactato.",
-    2: "Estructura de alta carga. Incluye 2 días de intervalos explosivos (VO2 Max) "
-       "y rodadas de más de 4 horas.",
+    0: "Focus on building an aerobic base. Easy-paced rides of 1 to 2 hours "
+       "to get your body used to training and help prevent injuries.",
+    1: "Focus on improving your cruising speed. Balances aerobic endurance "
+       "(Zone 2) with lactate-threshold work.",
+    2: "High-load structure. Includes 2 days of explosive intervals (VO2 Max) "
+       "and rides of more than 4 hours.",
 }
 
 
@@ -36,7 +36,7 @@ class MLService:
             model_path = os.path.join(ARTIFACTS, 'model.joblib')
             scaler_path = os.path.join(ARTIFACTS, 'scaler.joblib')
             if not (os.path.exists(model_path) and os.path.exists(scaler_path)):
-                raise FileNotFoundError("Artefactos del plan no encontrados. Ejecuta ml_engine/train_model.py")
+                raise FileNotFoundError("Training plan model files not found. Run ml_engine/train_model.py")
             self.model = joblib.load(model_path)
             self.scaler = joblib.load(scaler_path)
 

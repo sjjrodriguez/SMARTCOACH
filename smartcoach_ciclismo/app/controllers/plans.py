@@ -7,13 +7,13 @@ from app.services.ml_service import ml_predictor
 
 plans_bp = Blueprint('plans', __name__, url_prefix='/plans')
 
-# (campo, etiqueta, mínimo, máximo, tipo)
+# (field, label, min, max, type)
 PLAN_FIELDS = [
-    ('age', 'Edad', 10, 90, int),
-    ('weight_kg', 'Peso (kg)', 30, 200, float),
-    ('weekly_hours', 'Horas / semana', 0.5, 40, float),
-    ('resting_heart_rate', 'FC reposo (lpm)', 30, 120, int),
-    ('tss_acumulado', 'TSS acumulado', 0, 50000, float),
+    ('age', 'Age', 10, 90, int),
+    ('weight_kg', 'Weight (kg)', 30, 200, float),
+    ('weekly_hours', 'Hours per week', 0.5, 40, float),
+    ('resting_heart_rate', 'Resting heart rate (bpm)', 30, 120, int),
+    ('tss_acumulado', 'Accumulated TSS', 0, 50000, float),
 ]
 
 
@@ -24,10 +24,10 @@ def _parse_plan_form(form):
         try:
             v = cast(float(raw)) if cast is int else cast(raw)
         except ValueError:
-            errors.append(f'{label}: ingresa un número.')
+            errors.append(f'{label}: enter a number.')
             continue
         if not lo <= v <= hi:
-            errors.append(f'{label}: debe estar entre {lo} y {hi}.')
+            errors.append(f'{label} must be between {lo} and {hi}.')
         values[name] = v
     return values, errors
 
@@ -52,7 +52,7 @@ def generate_plan():
             weekly_hours=values['weekly_hours'],
             resting_hr=values['resting_heart_rate'], tss=values['tss_acumulado'])
     except Exception as e:
-        flash(f'No se pudo ejecutar el modelo: {e}', 'danger')
+        flash(f'Could not run the model: {e}', 'danger')
         return render_template('plans/generate.html', last=None, values=request.form), 500
 
     plan = TrainingPlan(
@@ -71,11 +71,11 @@ def view_plan(plan_id):
     if plan is None or plan.user_id != current_user.id:
         abort(404)
     datos = {
-        'Edad': f'{plan.age} años',
-        'Peso': f'{plan.weight_kg} kg',
-        'Disponibilidad': f'{plan.weekly_hours} h/semana',
-        'FC Reposo': f'{plan.resting_heart_rate} lpm',
-        'TSS Base': plan.tss_acumulado,
+        'Age': f'{plan.age} years',
+        'Weight': f'{plan.weight_kg} kg',
+        'Availability': f'{plan.weekly_hours} h/week',
+        'Resting heart rate': f'{plan.resting_heart_rate} bpm',
+        'Base TSS': plan.tss_acumulado,
     }
     return render_template('plans/view.html', recomendacion=plan.plan_label,
                            descripcion=plan.description, datos=datos, plan=plan)

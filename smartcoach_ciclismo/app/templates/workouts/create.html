@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Log Workout - SmartCoach{% endblock %}
+{% block content %}
+{% set v = values if values else {'date': today} %}
+<div class="row justify-content-center sc-action">
+    <div class="col-md-9 col-lg-7">
+        <div class="card">
+            <div class="card-body">
+                <h1 class="sc-h1 mb-1">Log a workout</h1>
+                <p class="sc-note mb-4">Record a training session to keep your load and risk level up to date.</p>
+                {% set submit_label = 'Save workout' %}
+                {% include 'workouts/_form.html' %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

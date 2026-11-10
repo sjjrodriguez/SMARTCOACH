@@ -19,27 +19,27 @@ MODEL_PATH = Path(__file__).resolve().parents[2] / "ml_engine" / "models" / "inj
 
 # Campo: (etiqueta, mínimo, máximo, obligatorio)
 NUMERIC = {
-    "Age":                ("Edad", 10, 90, True),
-    "Height":             ("Estatura (cm)", 120, 220, True),
-    "Bodymass":           ("Peso (kg)", 30, 200, True),
-    "Frequency_cycling":  ("Salidas por semana", 1, 14, True),
-    "Hours_week_cycling": ("Horas por semana", 0.5, 60, True),
-    "Km_week":            ("Km por semana", 0, 2000, True),
-    "Experience":         ("Años de experiencia", 0, 70, True),
-    "Speed":              ("Velocidad media (km/h)", 5, 70, False),
-    "TOTALKM":            ("Km semanales totales", 0, 3000, False),
+    "Age":                ("Age", 10, 90, True),
+    "Height":             ("Height (cm)", 120, 220, True),
+    "Bodymass":           ("Weight (kg)", 30, 200, True),
+    "Frequency_cycling":  ("Rides per week", 1, 14, True),
+    "Hours_week_cycling": ("Hours per week", 0.5, 60, True),
+    "Km_week":            ("Km per week", 0, 2000, True),
+    "Experience":         ("Years of experience", 0, 70, True),
+    "Speed":              ("Average speed (km/h)", 5, 70, False),
+    "TOTALKM":            ("Total weekly km", 0, 3000, False),
 }
 
 # Campo: (etiqueta, códigos válidos). Códigos según la hoja "0.Information" de DATA.xlsx.
 CHOICES = {
-    "Gender":              ("Género", {0, 1}),
-    "Discipline":          ("Disciplina", {1, 2, 3}),
-    "Purpose":             ("Objetivo", {1, 2, 3}),
-    "Terrain":             ("Terreno", {1, 2}),
-    "Coach":               ("Entrenador", {0, 1}),
-    "Bike_quality":        ("Calidad de la bici", {1, 2, 3}),
-    "Comfort_saddle":      ("Comodidad del sillín", {2, 3}),
-    "Comfort_posture":     ("Comodidad de la postura", {2, 3}),
+    "Gender":              ("Gender", {0, 1}),
+    "Discipline":          ("Discipline", {1, 2, 3}),
+    "Purpose":             ("Goal", {1, 2, 3}),
+    "Terrain":             ("Terrain", {1, 2}),
+    "Coach":               ("Coach", {0, 1}),
+    "Bike_quality":        ("Bike quality", {1, 2, 3}),
+    "Comfort_saddle":      ("Saddle comfort", {2, 3}),
+    "Comfort_posture":     ("Posture comfort", {2, 3}),
 }
 
 # Casillas: marcada = 1, sin marcar = 0
@@ -57,7 +57,7 @@ def load_model():
     if _model is None:
         if not MODEL_PATH.exists():
             raise FileNotFoundError(
-                "Modelo de ciclistas no encontrado. Ejecuta ml_engine/train_cyclist_injury_model.py")
+                "Cyclist model not found. Run ml_engine/train_cyclist_injury_model.py")
         _model = joblib.load(MODEL_PATH)
     return _model
 
@@ -69,14 +69,14 @@ def parse_profile(form):
         raw = (form.get(field) or "").strip().replace(",", ".")
         if raw == "":
             if required:
-                raise ValidationError(f"Falta el campo: {label}.")
+                raise ValidationError(f"{label} is required.")
             continue
         try:
             value = float(raw)
         except ValueError:
-            raise ValidationError(f"{label}: ingresa un número.")
+            raise ValidationError(f"{label}: enter a number.")
         if not lo <= value <= hi:
-            raise ValidationError(f"{label} debe estar entre {lo} y {hi}.")
+            raise ValidationError(f"{label} must be between {lo} and {hi}.")
         data[field] = value
 
     for field, (label, allowed) in CHOICES.items():
@@ -88,7 +88,7 @@ def parse_profile(form):
         except ValueError:
             value = None
         if value not in allowed:
-            raise ValidationError(f"{label}: opción no válida.")
+            raise ValidationError(f"{label}: invalid option.")
         data[field] = value
 
     for field in CHECKS:
@@ -112,14 +112,14 @@ def predict_injury(data):
     prediction = int(model.predict(X)[0])
 
     if prediction == 1:
-        label = "Perfil con posible antecedente de lesión"
-        message = ("Tu perfil se parece al de ciclistas que han tenido lesiones. Cuida el ajuste de la "
-                   "bici, la recuperación y consulta a un profesional si sientes molestias.")
+        label = "Profile with a possible injury history"
+        message = ("Your profile resembles that of cyclists who have had injuries. Take care of your "
+                   "bike fit and recovery, and see a professional if you feel any discomfort.")
         css = "med"
     else:
-        label = "Perfil sin antecedente de lesión probable"
-        message = ("Tu perfil no se parece al de ciclistas con lesiones previas. "
-                   "Mantén tu plan y sigue con tus chequeos diarios.")
+        label = "Profile unlikely to have an injury history"
+        message = ("Your profile doesn't resemble that of cyclists with previous injuries. "
+                   "Keep following your plan and keep doing your daily check-ins.")
         css = "low"
 
     return {"prediction": prediction, "prob_injury": prob_injury,

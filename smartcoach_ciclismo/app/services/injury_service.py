@@ -16,10 +16,20 @@ LIMITS = {
     "heart_rate":         (30, 220),
 }
 
+# Field names shown to the user in validation messages
+LABELS = {
+    "recovery_score":     "Recovery",
+    "fatigue_index":      "Fatigue",
+    "sleep_quality":      "Sleep quality",
+    "training_intensity": "Effort (RPE)",
+    "training_duration":  "Duration",
+    "heart_rate":         "Average heart rate",
+}
+
 RISK_TEXT = {
-    "Low":    ("Riesgo bajo", "Tu estado de hoy es compatible con tu carga. Mantén tu plan."),
-    "Medium": ("Riesgo medio", "Hay señales de sobrecarga. Reduce intensidad y prioriza sueño y recuperación."),
-    "High":   ("Riesgo alto", "Alta probabilidad de lesión. Descansa o haz una sesión muy suave y consulta a tu entrenador o fisioterapeuta si hay dolor."),
+    "Low":    ("Low risk", "Today's condition matches your training load. Keep following your plan."),
+    "Medium": ("Medium risk", "There are signs of overload. Reduce intensity and prioritize sleep and recovery."),
+    "High":   ("High risk", "High probability of injury. Rest or do a very easy session, and consult your coach or physiotherapist if you feel any pain."),
 }
 LEVEL_CSS = {"Low": "low", "Medium": "med", "High": "high"}
 
@@ -37,13 +47,13 @@ def parse_checkin(form):
             if field == "heart_rate":      # único opcional
                 clean[field] = None
                 continue
-            raise ValidationError(f"Falta el campo: {field}")
+            raise ValidationError(f"{LABELS[field]} is required.")
         try:
             value = float(raw.replace(",", "."))
         except ValueError:
-            raise ValidationError(f"Valor no numérico en: {field}")
+            raise ValidationError(f"{LABELS[field]}: enter a number.")
         if not lo <= value <= hi:
-            raise ValidationError(f"{field} debe estar entre {lo} y {hi}.")
+            raise ValidationError(f"{LABELS[field]} must be between {lo} and {hi}.")
         clean[field] = value if field == "sleep_quality" else int(round(value))
     return clean
 
@@ -59,7 +69,7 @@ class InjuryService:
             mp = os.path.join(ARTIFACTS, 'injury_model.joblib')
             fp = os.path.join(ARTIFACTS, 'injury_features.json')
             if not (os.path.exists(mp) and os.path.exists(fp)):
-                raise FileNotFoundError("Modelo de lesiones no encontrado. Ejecuta ml_engine/train_injury_model.py")
+                raise FileNotFoundError("Injury model not found. Run ml_engine/train_injury_model.py")
             self.model = joblib.load(mp)
             with open(fp) as f:
                 meta = json.load(f)
@@ -89,15 +99,15 @@ class InjuryService:
         """Consejos puntuales según las variables que más pesan en el modelo."""
         tips = []
         if data["recovery_score"] < 40:
-            tips.append("Tu recuperación percibida es baja: evita intervalos hoy y prioriza movilidad y descanso.")
+            tips.append("Your perceived recovery is low: skip intervals today and focus on mobility and rest.")
         if data["fatigue_index"] > 70:
-            tips.append("Fatiga alta: reduce el volumen de la próxima sesión entre 20% y 30%.")
+            tips.append("High fatigue: reduce the volume of your next session by 20-30%.")
         if data["sleep_quality"] < 5:
-            tips.append("Dormiste mal: apunta a 7-9 h esta noche; el sueño corto es un factor de riesgo de lesión.")
+            tips.append("You slept poorly: aim for 7-9 hours tonight; short sleep is an injury risk factor.")
         if data["training_intensity"] >= 8 and data["training_duration"] >= 90:
-            tips.append("Sesión larga e intensa: planea un día suave después.")
+            tips.append("Long, intense session: plan an easy day afterwards.")
         if not tips:
-            tips.append("Sin alertas puntuales. Sigue registrando para detectar tendencias.")
+            tips.append("No specific alerts. Keep logging to spot trends.")
         return tips
 
 

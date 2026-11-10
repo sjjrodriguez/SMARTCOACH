@@ -1,5 +1,5 @@
-from datetime import datetime
-from flask import Blueprint, render_template, redirect, url_for, flash, request, abort
+from datetime import date, datetime
+from flask import Blueprint, render_template, redirect, url_for, flash, request, abort, current_app
 from flask_login import login_required, current_user
 from app import db
 from app.models.workout import Workout
@@ -23,9 +23,9 @@ def create_workout():
             workout_date = datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else datetime.utcnow().date()
             duration_min = int(request.form.get('duration_min'))
             distance_km = float(request.form.get('distance_km'))
-            elevation_gain_m = float(request.form.get('elevation_gain_m', 0.0))
+            elevation_gain_m = float(request.form.get('elevation_gain_m') or 0.0)
             rpe = int(request.form.get('rpe'))
-            fatigue = int(request.form.get('perceived_fatigue', 1))
+            fatigue = int(request.form.get('perceived_fatigue') or 1)
             notes = request.form.get('notes', '')
 
             # Approximate TSS computation based on duration and RPE
@@ -47,11 +47,16 @@ def create_workout():
 
             flash('Training session logged successfully.', 'success')
             return redirect(url_for('workouts.list_workouts'))
-        except Exception as e:
+        except (TypeError, ValueError):
             db.session.rollback()
-            flash(f'Error saving workout: {str(e)}', 'danger')
+            flash('Please check the values you entered and try again.', 'danger')
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception('Error saving workout')
+            flash('Could not save the workout. Please try again.', 'danger')
 
-    return render_template('workouts/create.html')
+    values = request.form if request.method == 'POST' else {'date': date.today().isoformat()}
+    return render_template('workouts/create.html', values=values)
 
 # 3. UPDATE: Edit an existing workout session
 @workouts_bp.route('/<int:workout_id>/edit', methods=['GET', 'POST'])
@@ -67,20 +72,25 @@ def edit_workout(workout_id):
             workout.date = datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else workout.date
             workout.duration_min = int(request.form.get('duration_min'))
             workout.distance_km = float(request.form.get('distance_km'))
-            workout.elevation_gain_m = float(request.form.get('elevation_gain_m', 0.0))
+            workout.elevation_gain_m = float(request.form.get('elevation_gain_m') or 0.0)
             workout.rpe = int(request.form.get('rpe'))
-            workout.perceived_fatigue = int(request.form.get('perceived_fatigue', 1))
+            workout.perceived_fatigue = int(request.form.get('perceived_fatigue') or 1)
             workout.notes = request.form.get('notes', '')
             workout.estimated_tss = round((workout.duration_min * workout.rpe * 1.1) / 10, 2)
 
             db.session.commit()
             flash('Workout updated successfully.', 'success')
             return redirect(url_for('workouts.list_workouts'))
-        except Exception as e:
+        except (TypeError, ValueError):
             db.session.rollback()
-            flash(f'Error updating workout: {str(e)}', 'danger')
+            flash('Please check the values you entered and try again.', 'danger')
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception('Error updating workout')
+            flash('Could not update the workout. Please try again.', 'danger')
 
-    return render_template('workouts/edit.html', workout=workout)
+    values = request.form if request.method == 'POST' else None
+    return render_template('workouts/edit.html', workout=workout, values=values)
 
 # 4. DELETE: Remove a workout entry
 @workouts_bp.route('/<int:workout_id>/delete', methods=['POST'])

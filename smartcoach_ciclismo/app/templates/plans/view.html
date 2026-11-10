@@ -1,80 +1,86 @@
 {% extends "base.html" %}
+{% block title %}Your Plan - SmartCoach{% endblock %}
 {% block content %}
-<div class="card border-primary shadow mt-4">
+<div class="card border-primary shadow-sm mt-2">
     <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-        <h4 class="mb-0">Detalle de tu Plan de Entrenamiento 🚴‍♂️</h4>
-        <span class="badge bg-light text-primary">IA Completada</span>
+        <h1 class="h4 mb-0">Your training plan</h1>
+        <span class="badge bg-light text-primary">Model result</span>
     </div>
-    <div class="card-body text-center p-5">
-        <h5 class="text-muted mb-4">Según el análisis de nuestro modelo predictivo, este es tu enfoque ideal:</h5>
-        
-        <h1 class="text-primary fw-bold mt-4 mb-2">{{ recomendacion }}</h1>
-        <p class="lead text-secondary mb-4 px-4">{{ descripcion }}</p>
-        
+    <div class="card-body text-center p-4 p-md-5">
+        <h2 class="h5 text-muted mb-4">Based on our predictive model's analysis, this is your ideal focus:</h2>
+
+        <p class="display-6 text-primary fw-bold mt-4 mb-2">{{ recomendacion }}</p>
+        <p class="lead text-secondary mb-2 px-md-4">{{ descripcion }}</p>
+        <p class="sc-note mt-0">
+            Plan period (4 weeks): {{ plan.start_date.strftime('%b %d, %Y') }} &ndash; {{ plan.end_date.strftime('%b %d, %Y') }}
+        </p>
+
         <hr class="my-4">
-        
+
         <div class="row text-start mt-4">
             <div class="col-md-6">
-                <p class="fw-bold mb-2 text-primary">Variables procesadas (Random Forest):</p>
-                <div class="bg-light p-3 rounded border">
-                    <ul class="list-unstyled mb-0">
-                        {% for key, value in datos.items() %}
-                            <li class="mb-1">✔️ <strong>{{ key }}:</strong> {{ value }}</li>
-                        {% endfor %}
-                    </ul>
-                </div>
+                <h3 class="h6 fw-bold mb-2 text-primary">Data used for your plan</h3>
+                <ul class="list-group">
+                    {% for key, value in datos.items() %}
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span class="text-secondary">{{ key }}</span>
+                            <strong>{{ value }}</strong>
+                        </li>
+                    {% endfor %}
+                </ul>
             </div>
-            
+
             <div class="col-md-6 mt-4 mt-md-0">
-                <p class="fw-bold mb-2 text-info">¿Cómo calcula la IA tu nivel?</p>
+                <h3 class="h6 fw-bold mb-2 text-primary">How is your level calculated?</h3>
                 <div class="accordion shadow-sm" id="explicacionMetricas">
-                    
+
                     <div class="accordion-item">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseHoras" aria-expanded="true">
-                                ⏱️ Disponibilidad (Horas)
+                        <h4 class="accordion-header">
+                            <button class="accordion-button py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseHoras" aria-expanded="true" aria-controls="collapseHoras">
+                                Availability (hours)
                             </button>
-                        </h2>
+                        </h4>
                         <div id="collapseHoras" class="accordion-collapse collapse show" data-bs-parent="#explicacionMetricas">
                             <div class="accordion-body small text-muted">
-                                Es el factor principal. La Inteligencia Artificial sabe que un plan Avanzado exige más de 12 horas a la semana. Si cuentas con menos de 6 horas, te asignará un plan de Acondicionamiento Base para asegurar que puedas cumplirlo.
+                                This is the main factor. The model has learned that an Advanced plan requires more than 12 hours per week. If you have fewer than 6 hours, it will assign a Base Conditioning plan so you can realistically follow it.
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="accordion-item">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFC">
-                                ❤️ Frecuencia Cardíaca (Reposo)
+                        <h4 class="accordion-header">
+                            <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFC" aria-expanded="false" aria-controls="collapseFC">
+                                Resting heart rate
                             </button>
-                        </h2>
+                        </h4>
                         <div id="collapseFC" class="accordion-collapse collapse" data-bs-parent="#explicacionMetricas">
                             <div class="accordion-body small text-muted">
-                                Funciona como indicador de tu "motor" actual. Un corazón entrenado (nivel avanzado) bombea más sangre con menos esfuerzo, rondando los 40-55 lpm. Valores sobre 70 lpm inclinan a la IA a sugerir planes de intensidad moderada.
+                                It works as an indicator of your current "engine". A trained heart (advanced level) pumps more blood with less effort, at around 40-55 bpm. Values above 70 bpm lead the model to suggest moderate-intensity plans.
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="accordion-item">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTSS">
-                                🔋 Experiencia (TSS)
+                        <h4 class="accordion-header">
+                            <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTSS" aria-expanded="false" aria-controls="collapseTSS">
+                                Experience (TSS)
                             </button>
-                        </h2>
+                        </h4>
                         <div id="collapseTSS" class="accordion-collapse collapse" data-bs-parent="#explicacionMetricas">
                             <div class="accordion-body small text-muted">
-                                El Training Stress Score acumulado le dice al modelo cuánto castigo previo soportan tus músculos. Un TSS inicial de 0 indica que empiezas de cero, limitando las cargas máximas para proteger tus rodillas y articulaciones.
+                                The accumulated Training Stress Score tells the model how much training load your body has already handled. A starting TSS of 0 means you are beginning from scratch, which limits the maximum loads to protect your knees and joints.
                             </div>
                         </div>
                     </div>
-                    
+
                 </div>
             </div>
         </div>
-        
-        <div class="mt-5">
-            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary me-2">Volver al Dashboard</a>
-            <a href="{{ url_for('injury.checkin') }}" class="btn btn-primary">Hacer seguimiento de lesiones</a>
+
+        <div class="mt-5 d-flex flex-wrap justify-content-center gap-2">
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">Back to Dashboard</a>
+            <a href="{{ url_for('plans.generate_plan') }}" class="btn btn-outline-secondary">Generate another plan</a>
+            <a href="{{ url_for('injury.checkin') }}" class="btn btn-primary">Log an injury check-in</a>
         </div>
     </div>
 </div>

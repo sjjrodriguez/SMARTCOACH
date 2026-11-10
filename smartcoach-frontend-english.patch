@@ -1,0 +1,1764 @@
+diff --git a/smartcoach_ciclismo/app/__init__.py b/smartcoach_ciclismo/app/__init__.py
+index 160ffcd..13e836a 100644
+--- a/smartcoach_ciclismo/app/__init__.py
++++ b/smartcoach_ciclismo/app/__init__.py
+@@ -7,7 +7,7 @@ from flask_login import LoginManager
+ db = SQLAlchemy()
+ login_manager = LoginManager()
+ login_manager.login_view = 'auth.login'
+-login_manager.login_message = 'Inicia sesión para continuar.'
++login_manager.login_message = 'Please sign in to continue.'
+ login_manager.login_message_category = 'info'
+ 
+ @login_manager.user_loader
+diff --git a/smartcoach_ciclismo/app/controllers/auth.py b/smartcoach_ciclismo/app/controllers/auth.py
+index c10acc6..53597a9 100644
+--- a/smartcoach_ciclismo/app/controllers/auth.py
++++ b/smartcoach_ciclismo/app/controllers/auth.py
+@@ -58,4 +58,5 @@ def login():
+ @auth_bp.route('/logout', methods=['POST'])
+ def logout():
+     logout_user()
++    flash('You have been signed out.', 'info')
+     return redirect(url_for('auth.login'))
+\ No newline at end of file
+diff --git a/smartcoach_ciclismo/app/controllers/injury.py b/smartcoach_ciclismo/app/controllers/injury.py
+index 2f32a18..79ed2d9 100644
+--- a/smartcoach_ciclismo/app/controllers/injury.py
++++ b/smartcoach_ciclismo/app/controllers/injury.py
+@@ -18,7 +18,7 @@ def index():
+                 .filter(InjuryCheckin.user_id == current_user.id, InjuryCheckin.date >= since)
+                 .order_by(InjuryCheckin.date.desc(), InjuryCheckin.id.desc()).all())
+     chart = {
+-        'labels': [c.date.strftime('%d/%m') for c in reversed(checkins)],
++        'labels': [c.date.strftime('%b %d') for c in reversed(checkins)],
+         'recovery': [c.recovery_score for c in reversed(checkins)],
+         'fatigue': [c.fatigue_index for c in reversed(checkins)],
+     }
+@@ -39,7 +39,7 @@ def checkin():
+         flash(str(e), 'danger')
+         return render_template('injury/checkin.html', values=request.form), 400
+     except Exception as e:
+-        flash(f'No se pudo calcular el riesgo: {e}', 'danger')
++        flash(f'Could not calculate the risk: {e}', 'danger')
+         return render_template('injury/checkin.html', values=request.form), 500
+ 
+     record = InjuryCheckin(
+@@ -51,10 +51,10 @@ def checkin():
+     return redirect(url_for('injury.result', checkin_id=record.id))
+ 
+ 
+-@injury_bp.route('/perfil', methods=['GET', 'POST'])
++@injury_bp.route('/profile', methods=['GET', 'POST'])
+ @login_required
+ def profile():
+-    """Modelo de ciclistas: probabilidad de antecedente de lesión según el perfil."""
++    """Cyclist model: probability of a previous injury based on the profile."""
+     if request.method == 'GET':
+         return render_template('injury/profile.html', values={}, result=None)
+ 
+@@ -65,7 +65,7 @@ def profile():
+         flash(str(e), 'danger')
+         return render_template('injury/profile.html', values=request.form, result=None), 400
+     except Exception as e:
+-        flash(f'No se pudo calcular el perfil: {e}', 'danger')
++        flash(f'Could not calculate the profile result: {e}', 'danger')
+         return render_template('injury/profile.html', values=request.form, result=None), 500
+     return render_template('injury/profile.html', values=request.form, result=result)
+ 
+diff --git a/smartcoach_ciclismo/app/controllers/plans.py b/smartcoach_ciclismo/app/controllers/plans.py
+index f4af72f..b6126c2 100644
+--- a/smartcoach_ciclismo/app/controllers/plans.py
++++ b/smartcoach_ciclismo/app/controllers/plans.py
+@@ -7,13 +7,13 @@ from app.services.ml_service import ml_predictor
+ 
+ plans_bp = Blueprint('plans', __name__, url_prefix='/plans')
+ 
+-# (campo, etiqueta, mínimo, máximo, tipo)
++# (field, label, min, max, type)
+ PLAN_FIELDS = [
+-    ('age', 'Edad', 10, 90, int),
+-    ('weight_kg', 'Peso (kg)', 30, 200, float),
+-    ('weekly_hours', 'Horas / semana', 0.5, 40, float),
+-    ('resting_heart_rate', 'FC reposo (lpm)', 30, 120, int),
+-    ('tss_acumulado', 'TSS acumulado', 0, 50000, float),
++    ('age', 'Age', 10, 90, int),
++    ('weight_kg', 'Weight (kg)', 30, 200, float),
++    ('weekly_hours', 'Hours per week', 0.5, 40, float),
++    ('resting_heart_rate', 'Resting heart rate (bpm)', 30, 120, int),
++    ('tss_acumulado', 'Accumulated TSS', 0, 50000, float),
+ ]
+ 
+ 
+@@ -24,10 +24,10 @@ def _parse_plan_form(form):
+         try:
+             v = cast(float(raw)) if cast is int else cast(raw)
+         except ValueError:
+-            errors.append(f'{label}: ingresa un número.')
++            errors.append(f'{label}: enter a number.')
+             continue
+         if not lo <= v <= hi:
+-            errors.append(f'{label}: debe estar entre {lo} y {hi}.')
++            errors.append(f'{label} must be between {lo} and {hi}.')
+         values[name] = v
+     return values, errors
+ 
+@@ -52,7 +52,7 @@ def generate_plan():
+             weekly_hours=values['weekly_hours'],
+             resting_hr=values['resting_heart_rate'], tss=values['tss_acumulado'])
+     except Exception as e:
+-        flash(f'No se pudo ejecutar el modelo: {e}', 'danger')
++        flash(f'Could not run the model: {e}', 'danger')
+         return render_template('plans/generate.html', last=None, values=request.form), 500
+ 
+     plan = TrainingPlan(
+@@ -71,11 +71,11 @@ def view_plan(plan_id):
+     if plan is None or plan.user_id != current_user.id:
+         abort(404)
+     datos = {
+-        'Edad': f'{plan.age} años',
+-        'Peso': f'{plan.weight_kg} kg',
+-        'Disponibilidad': f'{plan.weekly_hours} h/semana',
+-        'FC Reposo': f'{plan.resting_heart_rate} lpm',
+-        'TSS Base': plan.tss_acumulado,
++        'Age': f'{plan.age} years',
++        'Weight': f'{plan.weight_kg} kg',
++        'Availability': f'{plan.weekly_hours} h/week',
++        'Resting heart rate': f'{plan.resting_heart_rate} bpm',
++        'Base TSS': plan.tss_acumulado,
+     }
+     return render_template('plans/view.html', recomendacion=plan.plan_label,
+                            descripcion=plan.description, datos=datos, plan=plan)
+diff --git a/smartcoach_ciclismo/app/controllers/workouts.py b/smartcoach_ciclismo/app/controllers/workouts.py
+index e7d0074..673e7ab 100644
+--- a/smartcoach_ciclismo/app/controllers/workouts.py
++++ b/smartcoach_ciclismo/app/controllers/workouts.py
+@@ -1,5 +1,5 @@
+-from datetime import datetime
+-from flask import Blueprint, render_template, redirect, url_for, flash, request, abort
++from datetime import date, datetime
++from flask import Blueprint, render_template, redirect, url_for, flash, request, abort, current_app
+ from flask_login import login_required, current_user
+ from app import db
+ from app.models.workout import Workout
+@@ -23,9 +23,9 @@ def create_workout():
+             workout_date = datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else datetime.utcnow().date()
+             duration_min = int(request.form.get('duration_min'))
+             distance_km = float(request.form.get('distance_km'))
+-            elevation_gain_m = float(request.form.get('elevation_gain_m', 0.0))
++            elevation_gain_m = float(request.form.get('elevation_gain_m') or 0.0)
+             rpe = int(request.form.get('rpe'))
+-            fatigue = int(request.form.get('perceived_fatigue', 1))
++            fatigue = int(request.form.get('perceived_fatigue') or 1)
+             notes = request.form.get('notes', '')
+ 
+             # Approximate TSS computation based on duration and RPE
+@@ -47,11 +47,16 @@ def create_workout():
+ 
+             flash('Training session logged successfully.', 'success')
+             return redirect(url_for('workouts.list_workouts'))
+-        except Exception as e:
++        except (TypeError, ValueError):
+             db.session.rollback()
+-            flash(f'Error saving workout: {str(e)}', 'danger')
++            flash('Please check the values you entered and try again.', 'danger')
++        except Exception:
++            db.session.rollback()
++            current_app.logger.exception('Error saving workout')
++            flash('Could not save the workout. Please try again.', 'danger')
+ 
+-    return render_template('workouts/create.html')
++    values = request.form if request.method == 'POST' else {'date': date.today().isoformat()}
++    return render_template('workouts/create.html', values=values)
+ 
+ # 3. UPDATE: Edit an existing workout session
+ @workouts_bp.route('/<int:workout_id>/edit', methods=['GET', 'POST'])
+@@ -67,20 +72,25 @@ def edit_workout(workout_id):
+             workout.date = datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else workout.date
+             workout.duration_min = int(request.form.get('duration_min'))
+             workout.distance_km = float(request.form.get('distance_km'))
+-            workout.elevation_gain_m = float(request.form.get('elevation_gain_m', 0.0))
++            workout.elevation_gain_m = float(request.form.get('elevation_gain_m') or 0.0)
+             workout.rpe = int(request.form.get('rpe'))
+-            workout.perceived_fatigue = int(request.form.get('perceived_fatigue', 1))
++            workout.perceived_fatigue = int(request.form.get('perceived_fatigue') or 1)
+             workout.notes = request.form.get('notes', '')
+             workout.estimated_tss = round((workout.duration_min * workout.rpe * 1.1) / 10, 2)
+ 
+             db.session.commit()
+             flash('Workout updated successfully.', 'success')
+             return redirect(url_for('workouts.list_workouts'))
+-        except Exception as e:
++        except (TypeError, ValueError):
++            db.session.rollback()
++            flash('Please check the values you entered and try again.', 'danger')
++        except Exception:
+             db.session.rollback()
+-            flash(f'Error updating workout: {str(e)}', 'danger')
++            current_app.logger.exception('Error updating workout')
++            flash('Could not update the workout. Please try again.', 'danger')
+ 
+-    return render_template('workouts/edit.html', workout=workout)
++    values = request.form if request.method == 'POST' else None
++    return render_template('workouts/edit.html', workout=workout, values=values)
+ 
+ # 4. DELETE: Remove a workout entry
+ @workouts_bp.route('/<int:workout_id>/delete', methods=['POST'])
+diff --git a/smartcoach_ciclismo/app/services/dashboard_service.py b/smartcoach_ciclismo/app/services/dashboard_service.py
+index 505560e..42b981d 100644
+--- a/smartcoach_ciclismo/app/services/dashboard_service.py
++++ b/smartcoach_ciclismo/app/services/dashboard_service.py
+@@ -13,21 +13,21 @@ solo necesita el diccionario con las claves level, label y message.
+ """
+ from datetime import date, datetime, timedelta
+ 
+-DAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
++DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+ 
+ RISK_TEXT = {
+-    "low": ("Riesgo bajo",
+-            "Tu carga de esta semana está dentro de lo que tu cuerpo ya tolera. "
+-            "Mantén tu plan."),
+-    "medium": ("Riesgo medio",
+-               "Tu carga de esta semana subió más de lo habitual. "
+-               "Prioriza el descanso y el sueño."),
+-    "high": ("Riesgo alto",
+-             "Tu carga de esta semana es muy superior a la de las últimas semanas. "
+-             "Baja la intensidad y descansa antes de tu próxima sesión fuerte."),
+-    "none": ("Sin datos suficientes",
+-             "Registra al menos una semana de entrenamientos anteriores "
+-             "para estimar tu riesgo."),
++    "low": ("Low risk",
++            "Your load this week is within what your body already tolerates. "
++            "Keep following your plan."),
++    "medium": ("Medium risk",
++               "Your load this week rose more than usual. "
++               "Prioritize rest and sleep."),
++    "high": ("High risk",
++             "Your load this week is much higher than in recent weeks. "
++             "Lower the intensity and rest before your next hard session."),
++    "none": ("Not enough data",
++             "Log workouts from at least one earlier week "
++             "to estimate your risk."),
+ }
+ 
+ 
+@@ -85,7 +85,7 @@ def build_dashboard_data(workouts, today=None):
+     for k in range(7, -1, -1):
+         end = today - timedelta(days=7 * k)
+         start = end - timedelta(days=6)
+-        weekly["labels"].append(f"{start.day:02d}/{start.month:02d}")
++        weekly["labels"].append(f"{start:%b} {start.day}")
+         weekly["values"].append(round(_load_between(workouts, start, end)))
+ 
+     # --- Semaforo ---
+diff --git a/smartcoach_ciclismo/app/services/injury_cyclist_service.py b/smartcoach_ciclismo/app/services/injury_cyclist_service.py
+index 553e850..c2a049f 100644
+--- a/smartcoach_ciclismo/app/services/injury_cyclist_service.py
++++ b/smartcoach_ciclismo/app/services/injury_cyclist_service.py
+@@ -19,27 +19,27 @@ MODEL_PATH = Path(__file__).resolve().parents[2] / "ml_engine" / "models" / "inj
+ 
+ # Campo: (etiqueta, mínimo, máximo, obligatorio)
+ NUMERIC = {
+-    "Age":                ("Edad", 10, 90, True),
+-    "Height":             ("Estatura (cm)", 120, 220, True),
+-    "Bodymass":           ("Peso (kg)", 30, 200, True),
+-    "Frequency_cycling":  ("Salidas por semana", 1, 14, True),
+-    "Hours_week_cycling": ("Horas por semana", 0.5, 60, True),
+-    "Km_week":            ("Km por semana", 0, 2000, True),
+-    "Experience":         ("Años de experiencia", 0, 70, True),
+-    "Speed":              ("Velocidad media (km/h)", 5, 70, False),
+-    "TOTALKM":            ("Km semanales totales", 0, 3000, False),
++    "Age":                ("Age", 10, 90, True),
++    "Height":             ("Height (cm)", 120, 220, True),
++    "Bodymass":           ("Weight (kg)", 30, 200, True),
++    "Frequency_cycling":  ("Rides per week", 1, 14, True),
++    "Hours_week_cycling": ("Hours per week", 0.5, 60, True),
++    "Km_week":            ("Km per week", 0, 2000, True),
++    "Experience":         ("Years of experience", 0, 70, True),
++    "Speed":              ("Average speed (km/h)", 5, 70, False),
++    "TOTALKM":            ("Total weekly km", 0, 3000, False),
+ }
+ 
+ # Campo: (etiqueta, códigos válidos). Códigos según la hoja "0.Information" de DATA.xlsx.
+ CHOICES = {
+-    "Gender":              ("Género", {0, 1}),
+-    "Discipline":          ("Disciplina", {1, 2, 3}),
+-    "Purpose":             ("Objetivo", {1, 2, 3}),
+-    "Terrain":             ("Terreno", {1, 2}),
+-    "Coach":               ("Entrenador", {0, 1}),
+-    "Bike_quality":        ("Calidad de la bici", {1, 2, 3}),
+-    "Comfort_saddle":      ("Comodidad del sillín", {2, 3}),
+-    "Comfort_posture":     ("Comodidad de la postura", {2, 3}),
++    "Gender":              ("Gender", {0, 1}),
++    "Discipline":          ("Discipline", {1, 2, 3}),
++    "Purpose":             ("Goal", {1, 2, 3}),
++    "Terrain":             ("Terrain", {1, 2}),
++    "Coach":               ("Coach", {0, 1}),
++    "Bike_quality":        ("Bike quality", {1, 2, 3}),
++    "Comfort_saddle":      ("Saddle comfort", {2, 3}),
++    "Comfort_posture":     ("Posture comfort", {2, 3}),
+ }
+ 
+ # Casillas: marcada = 1, sin marcar = 0
+@@ -57,7 +57,7 @@ def load_model():
+     if _model is None:
+         if not MODEL_PATH.exists():
+             raise FileNotFoundError(
+-                "Modelo de ciclistas no encontrado. Ejecuta ml_engine/train_cyclist_injury_model.py")
++                "Cyclist model not found. Run ml_engine/train_cyclist_injury_model.py")
+         _model = joblib.load(MODEL_PATH)
+     return _model
+ 
+@@ -69,14 +69,14 @@ def parse_profile(form):
+         raw = (form.get(field) or "").strip().replace(",", ".")
+         if raw == "":
+             if required:
+-                raise ValidationError(f"Falta el campo: {label}.")
++                raise ValidationError(f"{label} is required.")
+             continue
+         try:
+             value = float(raw)
+         except ValueError:
+-            raise ValidationError(f"{label}: ingresa un número.")
++            raise ValidationError(f"{label}: enter a number.")
+         if not lo <= value <= hi:
+-            raise ValidationError(f"{label} debe estar entre {lo} y {hi}.")
++            raise ValidationError(f"{label} must be between {lo} and {hi}.")
+         data[field] = value
+ 
+     for field, (label, allowed) in CHOICES.items():
+@@ -88,7 +88,7 @@ def parse_profile(form):
+         except ValueError:
+             value = None
+         if value not in allowed:
+-            raise ValidationError(f"{label}: opción no válida.")
++            raise ValidationError(f"{label}: invalid option.")
+         data[field] = value
+ 
+     for field in CHECKS:
+@@ -112,14 +112,14 @@ def predict_injury(data):
+     prediction = int(model.predict(X)[0])
+ 
+     if prediction == 1:
+-        label = "Perfil con posible antecedente de lesión"
+-        message = ("Tu perfil se parece al de ciclistas que han tenido lesiones. Cuida el ajuste de la "
+-                   "bici, la recuperación y consulta a un profesional si sientes molestias.")
++        label = "Profile with a possible injury history"
++        message = ("Your profile resembles that of cyclists who have had injuries. Take care of your "
++                   "bike fit and recovery, and see a professional if you feel any discomfort.")
+         css = "med"
+     else:
+-        label = "Perfil sin antecedente de lesión probable"
+-        message = ("Tu perfil no se parece al de ciclistas con lesiones previas. "
+-                   "Mantén tu plan y sigue con tus chequeos diarios.")
++        label = "Profile unlikely to have an injury history"
++        message = ("Your profile doesn't resemble that of cyclists with previous injuries. "
++                   "Keep following your plan and keep doing your daily check-ins.")
+         css = "low"
+ 
+     return {"prediction": prediction, "prob_injury": prob_injury,
+diff --git a/smartcoach_ciclismo/app/services/injury_service.py b/smartcoach_ciclismo/app/services/injury_service.py
+index ec92e8c..4d8f5dc 100644
+--- a/smartcoach_ciclismo/app/services/injury_service.py
++++ b/smartcoach_ciclismo/app/services/injury_service.py
+@@ -16,10 +16,20 @@ LIMITS = {
+     "heart_rate":         (30, 220),
+ }
+ 
++# Field names shown to the user in validation messages
++LABELS = {
++    "recovery_score":     "Recovery",
++    "fatigue_index":      "Fatigue",
++    "sleep_quality":      "Sleep quality",
++    "training_intensity": "Effort (RPE)",
++    "training_duration":  "Duration",
++    "heart_rate":         "Average heart rate",
++}
++
+ RISK_TEXT = {
+-    "Low":    ("Riesgo bajo", "Tu estado de hoy es compatible con tu carga. Mantén tu plan."),
+-    "Medium": ("Riesgo medio", "Hay señales de sobrecarga. Reduce intensidad y prioriza sueño y recuperación."),
+-    "High":   ("Riesgo alto", "Alta probabilidad de lesión. Descansa o haz una sesión muy suave y consulta a tu entrenador o fisioterapeuta si hay dolor."),
++    "Low":    ("Low risk", "Today's condition matches your training load. Keep following your plan."),
++    "Medium": ("Medium risk", "There are signs of overload. Reduce intensity and prioritize sleep and recovery."),
++    "High":   ("High risk", "High probability of injury. Rest or do a very easy session, and consult your coach or physiotherapist if you feel any pain."),
+ }
+ LEVEL_CSS = {"Low": "low", "Medium": "med", "High": "high"}
+ 
+@@ -37,13 +47,13 @@ def parse_checkin(form):
+             if field == "heart_rate":      # único opcional
+                 clean[field] = None
+                 continue
+-            raise ValidationError(f"Falta el campo: {field}")
++            raise ValidationError(f"{LABELS[field]} is required.")
+         try:
+             value = float(raw.replace(",", "."))
+         except ValueError:
+-            raise ValidationError(f"Valor no numérico en: {field}")
++            raise ValidationError(f"{LABELS[field]}: enter a number.")
+         if not lo <= value <= hi:
+-            raise ValidationError(f"{field} debe estar entre {lo} y {hi}.")
++            raise ValidationError(f"{LABELS[field]} must be between {lo} and {hi}.")
+         clean[field] = value if field == "sleep_quality" else int(round(value))
+     return clean
+ 
+@@ -59,7 +69,7 @@ class InjuryService:
+             mp = os.path.join(ARTIFACTS, 'injury_model.joblib')
+             fp = os.path.join(ARTIFACTS, 'injury_features.json')
+             if not (os.path.exists(mp) and os.path.exists(fp)):
+-                raise FileNotFoundError("Modelo de lesiones no encontrado. Ejecuta ml_engine/train_injury_model.py")
++                raise FileNotFoundError("Injury model not found. Run ml_engine/train_injury_model.py")
+             self.model = joblib.load(mp)
+             with open(fp) as f:
+                 meta = json.load(f)
+@@ -89,15 +99,15 @@ class InjuryService:
+         """Consejos puntuales según las variables que más pesan en el modelo."""
+         tips = []
+         if data["recovery_score"] < 40:
+-            tips.append("Tu recuperación percibida es baja: evita intervalos hoy y prioriza movilidad y descanso.")
++            tips.append("Your perceived recovery is low: skip intervals today and focus on mobility and rest.")
+         if data["fatigue_index"] > 70:
+-            tips.append("Fatiga alta: reduce el volumen de la próxima sesión entre 20% y 30%.")
++            tips.append("High fatigue: reduce the volume of your next session by 20-30%.")
+         if data["sleep_quality"] < 5:
+-            tips.append("Dormiste mal: apunta a 7-9 h esta noche; el sueño corto es un factor de riesgo de lesión.")
++            tips.append("You slept poorly: aim for 7-9 hours tonight; short sleep is an injury risk factor.")
+         if data["training_intensity"] >= 8 and data["training_duration"] >= 90:
+-            tips.append("Sesión larga e intensa: planea un día suave después.")
++            tips.append("Long, intense session: plan an easy day afterwards.")
+         if not tips:
+-            tips.append("Sin alertas puntuales. Sigue registrando para detectar tendencias.")
++            tips.append("No specific alerts. Keep logging to spot trends.")
+         return tips
+ 
+ 
+diff --git a/smartcoach_ciclismo/app/services/ml_service.py b/smartcoach_ciclismo/app/services/ml_service.py
+index fd32f57..0668847 100644
+--- a/smartcoach_ciclismo/app/services/ml_service.py
++++ b/smartcoach_ciclismo/app/services/ml_service.py
+@@ -8,18 +8,18 @@ ARTIFACTS = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../ml_en
+ FEATURES = ["age", "weight_kg", "weekly_hours", "resting_heart_rate", "tss_acumulado"]
+ 
+ PLAN_LEVELS = {
+-    0: "Plan Principiante - Acondicionamiento Base",
+-    1: "Plan Moderado - Desarrollo y Umbral",
+-    2: "Plan Avanzado - Alto Rendimiento",
++    0: "Beginner Plan - Base Conditioning",
++    1: "Moderate Plan - Development and Threshold",
++    2: "Advanced Plan - High Performance",
+ }
+ 
+ PLAN_DESCRIPTIONS = {
+-    0: "Enfoque en construir base aeróbica. Salidas de 1 a 2 horas a ritmo suave "
+-       "para acostumbrar el cuerpo y prevenir lesiones.",
+-    1: "Enfoque en mejorar tu velocidad crucero. Balancea el fondo aeróbico "
+-       "(Zona 2) con estímulos al umbral de lactato.",
+-    2: "Estructura de alta carga. Incluye 2 días de intervalos explosivos (VO2 Max) "
+-       "y rodadas de más de 4 horas.",
++    0: "Focus on building an aerobic base. Easy-paced rides of 1 to 2 hours "
++       "to get your body used to training and help prevent injuries.",
++    1: "Focus on improving your cruising speed. Balances aerobic endurance "
++       "(Zone 2) with lactate-threshold work.",
++    2: "High-load structure. Includes 2 days of explosive intervals (VO2 Max) "
++       "and rides of more than 4 hours.",
+ }
+ 
+ 
+@@ -36,7 +36,7 @@ class MLService:
+             model_path = os.path.join(ARTIFACTS, 'model.joblib')
+             scaler_path = os.path.join(ARTIFACTS, 'scaler.joblib')
+             if not (os.path.exists(model_path) and os.path.exists(scaler_path)):
+-                raise FileNotFoundError("Artefactos del plan no encontrados. Ejecuta ml_engine/train_model.py")
++                raise FileNotFoundError("Training plan model files not found. Run ml_engine/train_model.py")
+             self.model = joblib.load(model_path)
+             self.scaler = joblib.load(scaler_path)
+ 
+diff --git a/smartcoach_ciclismo/app/static/css/style.css b/smartcoach_ciclismo/app/static/css/style.css
+index e08a8ac..eae92f8 100644
+--- a/smartcoach_ciclismo/app/static/css/style.css
++++ b/smartcoach_ciclismo/app/static/css/style.css
+@@ -146,4 +146,63 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
+     box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .1);
+ }
+ 
+-.sc-action .card-body { padding: 2rem; }
+\ No newline at end of file
++.sc-action .card-body { padding: 2rem; }
++/* ---------- Page headers (title on the left, actions on the right) ---------- */
++.sc-page-header {
++    display: flex;
++    flex-wrap: wrap;
++    justify-content: space-between;
++    align-items: flex-end;
++    gap: 1rem;
++}
++.sc-page-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
++
++/* Section titles inside forms (also used outside the auth pages) */
++.sc-subtitle {
++    margin: 1.5rem 0 1rem;
++    padding-bottom: .5rem;
++    border-bottom: 1px solid var(--sc-line);
++    color: var(--sc-primary);
++    font-size: 1rem;
++    font-weight: 600;
++}
++.sc-subtitle:first-child { margin-top: .5rem; }
++
++.form-text { font-size: .85rem; }
++details.sc-note summary { cursor: pointer; }
++
++/* ---------- Tables ---------- */
++.table > thead th {
++    font-size: .85rem;
++    font-weight: 600;
++    color: var(--sc-muted);
++    white-space: nowrap;
++}
++.sc-notes-cell {
++    max-width: 16rem;
++    overflow: hidden;
++    text-overflow: ellipsis;
++    white-space: nowrap;
++}
++
++/* ---------- Risk probabilities (injury check-in result) ---------- */
++.sc-prob {
++    display: grid;
++    grid-template-columns: 4.5rem 1fr 3rem;
++    align-items: center;
++    gap: .75rem;
++    margin-bottom: .5rem;
++}
++.sc-prob .progress { height: .75rem; background: rgba(255, 255, 255, .65); }
++.sc-prob__pct { text-align: right; font-weight: 600; }
++
++/* Visible "skip to content" link for keyboard users */
++.visually-hidden-focusable:focus {
++    position: fixed;
++    top: .5rem;
++    left: .5rem;
++    z-index: 2000;
++    padding: .5rem 1rem;
++    background: var(--sc-surface);
++    border-radius: var(--sc-radius);
++}
+diff --git a/smartcoach_ciclismo/app/static/js/charts.js b/smartcoach_ciclismo/app/static/js/charts.js
+index d7be058..2f64470 100644
+--- a/smartcoach_ciclismo/app/static/js/charts.js
++++ b/smartcoach_ciclismo/app/static/js/charts.js
+@@ -32,14 +32,14 @@
+         maintainAspectRatio: false,
+         plugins: {
+             legend: { display: false },
+-            tooltip: { callbacks: { label: (ctx) => ` Carga: ${ctx.parsed.y}` } },
++            tooltip: { callbacks: { label: (ctx) => ` Load: ${ctx.parsed.y}` } },
+         },
+         scales: {
+             x: { grid: { display: false } },
+             y: {
+                 beginAtZero: true,
+                 grid: { color: line },
+-                title: { display: true, text: "Carga de entrenamiento" },
++                title: { display: true, text: "Training load" },
+             },
+         },
+     };
+@@ -82,7 +82,7 @@
+                 ...baseOptions,
+                 scales: {
+                     ...baseOptions.scales,
+-                    x: { grid: { display: false }, title: { display: true, text: "Semana (inicio)" } },
++                    x: { grid: { display: false }, title: { display: true, text: "Week starting" } },
+                 },
+             },
+         });
+diff --git a/smartcoach_ciclismo/app/static/js/main.js b/smartcoach_ciclismo/app/static/js/main.js
+index e99b58d..7d58c44 100644
+--- a/smartcoach_ciclismo/app/static/js/main.js
++++ b/smartcoach_ciclismo/app/static/js/main.js
+@@ -1,6 +1,6 @@
+-// Logica general del cliente.
++// General client-side logic.
+ document.addEventListener("DOMContentLoaded", function () {
+-    // Los mensajes de exito e informacion se cierran solos a los 6 segundos.
++    // Success and info messages close by themselves after 6 seconds.
+     document.querySelectorAll(".alert[data-autodismiss]").forEach(function (el) {
+         setTimeout(function () {
+             if (window.bootstrap && document.body.contains(el)) {
+@@ -8,4 +8,34 @@ document.addEventListener("DOMContentLoaded", function () {
+             }
+         }, 6000);
+     });
+-});
+\ No newline at end of file
++
++    // Forms with data-confirm ask for confirmation before submitting
++    // (used for destructive actions such as deleting a workout).
++    document.querySelectorAll("form[data-confirm]").forEach(function (form) {
++        form.addEventListener("submit", function (event) {
++            if (!window.confirm(form.dataset.confirm)) {
++                event.preventDefault();
++            }
++        });
++    });
++
++    // Avoid double submissions: disable the submit button once the form is sent.
++    document.querySelectorAll("form").forEach(function (form) {
++        form.addEventListener("submit", function (event) {
++            if (event.defaultPrevented) return;
++            form.querySelectorAll("button[type=submit]").forEach(function (btn) {
++                // Defer so the browser still sends the form before the button is disabled.
++                setTimeout(function () { btn.disabled = true; }, 0);
++            });
++        });
++    });
++});
++
++// Re-enable buttons when the page is restored from the back/forward cache.
++window.addEventListener("pageshow", function (event) {
++    if (event.persisted) {
++        document.querySelectorAll("button[type=submit]").forEach(function (btn) {
++            btn.disabled = false;
++        });
++    }
++});
+diff --git a/smartcoach_ciclismo/app/templates/auth/login.html b/smartcoach_ciclismo/app/templates/auth/login.html
+index 9aab8dd..4387d8e 100644
+--- a/smartcoach_ciclismo/app/templates/auth/login.html
++++ b/smartcoach_ciclismo/app/templates/auth/login.html
+@@ -1,26 +1,29 @@
+ {% extends "base.html" %}
++{% block title %}Sign In - SmartCoach{% endblock %}
+ {% block content %}
+-{{ 1 / 0 }}
+-<div class="flex justify-center items-center min-h-[80vh] px-4">
+-    <div class="w-full max-w-md bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+-        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 text-gray-800 font-semibold text-lg text-center">
+-            Sign In
+-        </div>
+-        <div class="p-6">
+-            <form method="POST" class="space-y-5">
+-                <div>
+-                    <label class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+-                    <input type="email" name="email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" autocomplete="email" required>
+-                </div>
+-                <div>
+-                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+-                    <input type="password" name="password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" autocomplete="current-password" required>
+-                </div>
+-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition-colors duration-200">
+-                    Sign In
+-                </button>
+-            </form>
++<div class="row justify-content-center sc-auth">
++    <div class="col-md-7 col-lg-5">
++        <div class="card">
++            <div class="card-header">Sign in to SmartCoach</div>
++            <div class="card-body p-4">
++                <form method="POST">
++                    <div class="mb-3">
++                        <label for="email" class="form-label">Email address</label>
++                        <input type="email" id="email" name="email" class="form-control"
++                               autocomplete="email" autofocus required>
++                    </div>
++                    <div class="mb-4">
++                        <label for="password" class="form-label">Password</label>
++                        <input type="password" id="password" name="password" class="form-control"
++                               autocomplete="current-password" required>
++                    </div>
++                    <button type="submit" class="btn btn-primary w-100">Sign In</button>
++                </form>
++            </div>
++            <div class="card-footer text-center bg-transparent py-3">
++                New to SmartCoach? <a href="{{ url_for('auth.register') }}">Create an account</a>
++            </div>
+         </div>
+     </div>
+ </div>
+-{% endblock %}
+\ No newline at end of file
++{% endblock %}
+diff --git a/smartcoach_ciclismo/app/templates/auth/register.html b/smartcoach_ciclismo/app/templates/auth/register.html
+index c84cd69..1a91b99 100644
+--- a/smartcoach_ciclismo/app/templates/auth/register.html
++++ b/smartcoach_ciclismo/app/templates/auth/register.html
+@@ -1,34 +1,38 @@
+ {% extends "base.html" %}
++{% block title %}Create Account - SmartCoach{% endblock %}
+ {% block content %}
+-<div class="flex justify-center items-center min-h-[80vh] px-4 py-8">
+-    <div class="w-full max-w-md bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+-        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 text-gray-800 font-semibold text-lg text-center">
+-            Create Account
+-        </div>
+-        <div class="p-6">
+-            <form method="POST" class="space-y-5">
+-                <div>
+-                    <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+-                    <input type="text" name="full_name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" required>
+-                </div>
+-                <div>
+-                    <label class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+-                    <input type="email" name="email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" autocomplete="email" required>
+-                </div>
+-                <div>
+-                    <label class="block text-sm font-medium text-gray-700 mb-1">Password <span class="text-gray-400 font-normal">(min. 8 characters)</span></label>
+-                    <input type="password" name="password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" minlength="8" autocomplete="new-password" required>
+-                </div>
+-                
+-                <p class="text-xs text-gray-500 text-center mt-2">
+-                    We'll ask for your physical stats when generating your plan.
+-                </p>
+-                
+-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition-colors duration-200 mt-2">
+-                    Sign Up
+-                </button>
+-            </form>
++<div class="row justify-content-center sc-auth">
++    <div class="col-md-7 col-lg-5">
++        <div class="card">
++            <div class="card-header">Create your account</div>
++            <div class="card-body p-4">
++                <form method="POST">
++                    <div class="mb-3">
++                        <label for="full_name" class="form-label">Full name</label>
++                        <input type="text" id="full_name" name="full_name" class="form-control"
++                               autocomplete="name" autofocus required>
++                    </div>
++                    <div class="mb-3">
++                        <label for="email" class="form-label">Email address</label>
++                        <input type="email" id="email" name="email" class="form-control"
++                               autocomplete="email" required>
++                    </div>
++                    <div class="mb-3">
++                        <label for="password" class="form-label">Password</label>
++                        <input type="password" id="password" name="password" class="form-control"
++                               minlength="8" autocomplete="new-password" aria-describedby="password-help" required>
++                        <div id="password-help" class="form-text">At least 8 characters.</div>
++                    </div>
++                    <p class="sc-note mb-4">
++                        We'll ask for your training and physical data later, when you generate your plan.
++                    </p>
++                    <button type="submit" class="btn btn-primary w-100">Sign Up</button>
++                </form>
++            </div>
++            <div class="card-footer text-center bg-transparent py-3">
++                Already have an account? <a href="{{ url_for('auth.login') }}">Sign in</a>
++            </div>
+         </div>
+     </div>
+ </div>
+-{% endblock %}
+\ No newline at end of file
++{% endblock %}
+diff --git a/smartcoach_ciclismo/app/templates/base.html b/smartcoach_ciclismo/app/templates/base.html
+index 4c8d7b8..78b8590 100644
+--- a/smartcoach_ciclismo/app/templates/base.html
++++ b/smartcoach_ciclismo/app/templates/base.html
+@@ -5,22 +5,21 @@
+     <meta name="viewport" content="width=device-width, initial-scale=1">
+     <title>{% block title %}SmartCoach Cycling{% endblock %}</title>
+ 
+-    <!-- Tailwind CSS (Added for the new clean designs) -->
+-    <script src="https://cdn.tailwindcss.com"></script>
+-
+     <link rel="preconnect" href="https://fonts.googleapis.com">
+     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+     <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+-    
+-    <!-- Bootstrap (Kept temporarily to avoid breaking the old navbar and footer) -->
++
++    <!-- Bootstrap 5 is the only CSS framework: every view uses it plus static/css/style.css -->
+     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+     {% block head %}{% endblock %}
+ </head>
+-<body class="d-flex flex-column min-vh-100 bg-gray-50">
++<body class="d-flex flex-column min-vh-100">
++    <a class="visually-hidden-focusable" href="#main">Skip to main content</a>
++
+     {% include 'components/_navbar.html' %}
+ 
+-    <main class="container flex-grow-1 py-4">
++    <main id="main" class="container flex-grow-1 py-4">
+         {% include 'components/_alerts.html' %}
+ 
+         {# Page content injected here #}
+@@ -33,4 +32,4 @@
+     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+     {% block scripts %}{% endblock %}
+ </body>
+-</html>
+\ No newline at end of file
++</html>
+diff --git a/smartcoach_ciclismo/app/templates/components/_alerts.html b/smartcoach_ciclismo/app/templates/components/_alerts.html
+index e779605..b8b9b84 100644
+--- a/smartcoach_ciclismo/app/templates/components/_alerts.html
++++ b/smartcoach_ciclismo/app/templates/components/_alerts.html
+@@ -1,11 +1,11 @@
+-{# Mensajes flash de Flask. Categorias: success, info, warning, danger (error = danger). #}
++{# Flask flash messages. Categories: success, info, warning, danger (error = danger). #}
+ {% with messages = get_flashed_messages(with_categories=true) %}
+   {% for category, message in messages %}
+     {% set level = {'error': 'danger', 'message': 'info'}.get(category, category) %}
+     <div class="alert alert-{{ level }} alert-dismissible fade show" role="alert"
+          {% if level in ('success', 'info') %}data-autodismiss{% endif %}>
+       {{ message }}
+-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
++      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+     </div>
+   {% endfor %}
+-{% endwith %}
+\ No newline at end of file
++{% endwith %}
+diff --git a/smartcoach_ciclismo/app/templates/components/_footer.html b/smartcoach_ciclismo/app/templates/components/_footer.html
+index 5501e7e..7173b09 100644
+--- a/smartcoach_ciclismo/app/templates/components/_footer.html
++++ b/smartcoach_ciclismo/app/templates/components/_footer.html
+@@ -1,6 +1,6 @@
+ <footer class="sc-footer mt-auto py-3">
+     <div class="container">
+-        <p class="mb-1">SmartCoach Ciclismo, proyecto académico de prevención de lesiones.</p>
+-        <p class="mb-0">Las alertas son orientativas y no reemplazan la opinión de un profesional de la salud.</p>
++        <p class="mb-1">SmartCoach Cycling, an academic injury-prevention project.</p>
++        <p class="mb-0">Alerts are for guidance only and do not replace the advice of a healthcare professional.</p>
+     </div>
+-</footer>   
+\ No newline at end of file
++</footer>
+diff --git a/smartcoach_ciclismo/app/templates/components/_navbar.html b/smartcoach_ciclismo/app/templates/components/_navbar.html
+index 738b852..1db56d5 100644
+--- a/smartcoach_ciclismo/app/templates/components/_navbar.html
++++ b/smartcoach_ciclismo/app/templates/components/_navbar.html
+@@ -1,3 +1,4 @@
++{% set ep = request.endpoint or '' %}
+ <nav class="navbar navbar-expand-lg navbar-dark sc-navbar">
+     <div class="container">
+         <a class="navbar-brand" href="{{ url_for('main.index') }}">SmartCoach</a>
+@@ -11,34 +12,38 @@
+             {% if current_user.is_authenticated %}
+             <ul class="navbar-nav me-auto">
+                 <li class="nav-item">
+-                    <a class="nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}"
++                    <a class="nav-link {% if ep == 'main.dashboard' %}active{% endif %}"
++                       {% if ep == 'main.dashboard' %}aria-current="page"{% endif %}
+                        href="{{ url_for('main.dashboard') }}">Dashboard</a>
+                 </li>
+                 <li class="nav-item">
+-                    <a class="nav-link {% if request.endpoint and request.endpoint.startswith('workouts.') %}active{% endif %}"
++                    <a class="nav-link {% if ep.startswith('workouts.') %}active{% endif %}"
++                       {% if ep.startswith('workouts.') %}aria-current="page"{% endif %}
+                        href="{{ url_for('workouts.list_workouts') }}">Workouts</a>
+                 </li>
+                 <li class="nav-item">
+-                    <a class="nav-link {% if request.endpoint and request.endpoint.startswith('plans.') %}active{% endif %}"
+-                       href="{{ url_for('plans.generate_plan') }}">Plan</a>
++                    <a class="nav-link {% if ep.startswith('plans.') %}active{% endif %}"
++                       {% if ep.startswith('plans.') %}aria-current="page"{% endif %}
++                       href="{{ url_for('plans.generate_plan') }}">Training Plan</a>
+                 </li>
+                 <li class="nav-item">
+-                    <a class="nav-link {% if request.endpoint and request.endpoint.startswith('injury.') %}active{% endif %}"
+-                       href="{{ url_for('injury.index') }}">Injuries</a>
++                    <a class="nav-link {% if ep.startswith('injury.') %}active{% endif %}"
++                       {% if ep.startswith('injury.') %}aria-current="page"{% endif %}
++                       href="{{ url_for('injury.index') }}">Injury Tracking</a>
+                 </li>
+             </ul>
+             <div class="navbar-nav align-items-lg-center">
+                 <span class="navbar-text text-white me-lg-3">Hello, {{ current_user.full_name }}</span>
+                 <form method="POST" action="{{ url_for('auth.logout') }}" class="d-inline">
+-                    <button type="submit" class="nav-link btn btn-link">Logout</button>
++                    <button type="submit" class="btn btn-outline-light btn-sm">Log out</button>
+                 </form>
+             </div>
+             {% else %}
+             <div class="navbar-nav ms-auto">
+-                <a class="nav-link" href="{{ url_for('auth.login') }}">Sign In</a>
+-                <a class="nav-link" href="{{ url_for('auth.register') }}">Sign Up</a>
++                <a class="nav-link {% if ep == 'auth.login' %}active{% endif %}" href="{{ url_for('auth.login') }}">Sign In</a>
++                <a class="nav-link {% if ep == 'auth.register' %}active{% endif %}" href="{{ url_for('auth.register') }}">Sign Up</a>
+             </div>
+             {% endif %}
+         </div>
+     </div>
+-</nav>
+\ No newline at end of file
++</nav>
+diff --git a/smartcoach_ciclismo/app/templates/dashboard/index.html b/smartcoach_ciclismo/app/templates/dashboard/index.html
+index 411f807..2c41ced 100644
+--- a/smartcoach_ciclismo/app/templates/dashboard/index.html
++++ b/smartcoach_ciclismo/app/templates/dashboard/index.html
+@@ -5,39 +5,53 @@
+ {% set r = data.risk %}
+ {% set k = data.kpis %}
+ 
+-<header class="mb-4">
+-    <h1 class="sc-h1 mb-1">Tu semana</h1>
+-    <p class="text-secondary mb-0">Resumen de tus últimos 7 días de entrenamiento.</p>
++<header class="sc-page-header mb-4">
++    <div>
++        <h1 class="sc-h1 mb-1">Your week</h1>
++        <p class="text-secondary mb-0">A summary of your last 7 days of training.</p>
++    </div>
++    <div class="sc-page-actions">
++        <a class="btn btn-primary" href="{{ url_for('workouts.create_workout') }}">Log workout</a>
++        <a class="btn btn-outline-secondary" href="{{ url_for('injury.checkin') }}">Daily check-in</a>
++    </div>
+ </header>
+ 
+-{# Semaforo de riesgo: el elemento principal del dashboard #}
++{# Risk traffic light: the main element of the dashboard #}
+ <section class="sc-risk" data-level="{{ r.level }}" aria-labelledby="risk-title">
+     <div>
+         <h2 class="sc-risk__title" id="risk-title">{{ r.label }}</h2>
+         <p class="sc-risk__message mb-0">{{ r.message }}</p>
+     </div>
+     <div class="sc-scale" role="img"
+-         aria-label="Escala de riesgo de bajo a alto. Nivel actual: {{ r.label }}">
+-        <span class="sc-scale__seg {% if r.level == 'low' %}is-active{% endif %}">Bajo</span>
+-        <span class="sc-scale__seg {% if r.level == 'medium' %}is-active{% endif %}">Medio</span>
+-        <span class="sc-scale__seg {% if r.level == 'high' %}is-active{% endif %}">Alto</span>
++         aria-label="Risk scale from low to high. Current level: {{ r.label }}">
++        <span class="sc-scale__seg {% if r.level == 'low' %}is-active{% endif %}">Low</span>
++        <span class="sc-scale__seg {% if r.level == 'medium' %}is-active{% endif %}">Medium</span>
++        <span class="sc-scale__seg {% if r.level == 'high' %}is-active{% endif %}">High</span>
+     </div>
+ </section>
+ <p class="sc-note">
+     {% if r.ratio is not none %}
+-        Tu carga de 7 días es {{ r.acute }} frente a un promedio semanal previo de {{ r.chronic_weekly }}
+-        (relación {{ r.ratio }}).
++        Your 7-day load is {{ r.acute }}, compared with a previous weekly average of {{ r.chronic_weekly }}
++        (ratio {{ r.ratio }}).
+     {% endif %}
+-    Es un indicador orientativo, no un diagnóstico médico.
++    This is a guideline, not a medical diagnosis.
+ </p>
++<details class="sc-note mb-0">
++    <summary>How is this calculated?</summary>
++    <p class="mt-2 mb-0">
++        We compare the training load of your last 7 days with your average weekly load over the 4 weeks
++        before that. A ratio up to 1.3 is low risk, up to 1.5 is medium risk, and above 1.5 is high risk.
++        Load is the estimated Training Stress Score (TSS) of each workout.
++    </p>
++</details>
+ 
+-{# Indicadores de la semana #}
++{# This week's indicators #}
+ <dl class="sc-stats">
+-    <div><dt>Sesiones</dt><dd>{{ k.sessions }}</dd></div>
+-    <div><dt>Tiempo</dt><dd>{{ k.hours }}<span class="unit">h</span></dd></div>
+-    <div><dt>Distancia</dt><dd>{{ k.km }}<span class="unit">km</span></dd></div>
+-    <div><dt>Carga total</dt><dd>{{ k.load }}</dd></div>
+-    <div><dt>Fatiga percibida</dt>
++    <div><dt>Sessions</dt><dd>{{ k.sessions }}</dd></div>
++    <div><dt>Time</dt><dd>{{ k.hours }}<span class="unit">h</span></dd></div>
++    <div><dt>Distance</dt><dd>{{ k.km }}<span class="unit">km</span></dd></div>
++    <div><dt>Total load</dt><dd>{{ k.load }}</dd></div>
++    <div><dt>Perceived fatigue (avg.)</dt>
+         <dd>{% if k.fatigue is not none %}{{ k.fatigue }}{% else %}-{% endif %}</dd></div>
+ </dl>
+ 
+@@ -45,28 +59,28 @@
+ <div class="row g-4">
+     <div class="col-lg-6">
+         <section class="sc-panel" aria-labelledby="daily-title">
+-            <h2 class="sc-h2" id="daily-title">Carga por día</h2>
++            <h2 class="sc-h2" id="daily-title">Load per day</h2>
+             <div class="sc-chart">
+                 <canvas id="chart-daily" role="img"
+-                        aria-label="Gráfica de barras con la carga de entrenamiento de cada uno de los últimos 7 días"></canvas>
++                        aria-label="Bar chart with the training load of each of the last 7 days"></canvas>
+             </div>
+         </section>
+     </div>
+     <div class="col-lg-6">
+         <section class="sc-panel" aria-labelledby="weekly-title">
+-            <h2 class="sc-h2" id="weekly-title">Carga por semana</h2>
++            <h2 class="sc-h2" id="weekly-title">Load per week</h2>
+             <div class="sc-chart">
+                 <canvas id="chart-weekly" role="img"
+-                        aria-label="Gráfica de línea con la carga semanal de las últimas 8 semanas"></canvas>
++                        aria-label="Line chart with the weekly training load of the last 8 weeks"></canvas>
+             </div>
+         </section>
+     </div>
+ </div>
+ {% else %}
+ <section class="sc-panel text-center py-5">
+-    <h2 class="sc-h2">Aún no tienes sesiones registradas</h2>
+-    <p class="text-secondary">Registra tu primer entrenamiento y aquí verás tu carga y tu nivel de riesgo.</p>
+-    <a class="btn btn-primary" href="{{ url_for('workouts.list_workouts') }}">Ir a mis entrenamientos</a>
++    <h2 class="sc-h2">You haven't logged any workouts yet</h2>
++    <p class="text-secondary">Log your first workout and you'll see your load and risk level here.</p>
++    <a class="btn btn-primary" href="{{ url_for('workouts.create_workout') }}">Log your first workout</a>
+ </section>
+ {% endif %}
+ {% endblock %}
+@@ -77,4 +91,4 @@
+ <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+ <script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+ {% endif %}
+-{% endblock %}
+\ No newline at end of file
++{% endblock %}
+diff --git a/smartcoach_ciclismo/app/templates/injury/checkin.html b/smartcoach_ciclismo/app/templates/injury/checkin.html
+index f1ac399..6790568 100644
+--- a/smartcoach_ciclismo/app/templates/injury/checkin.html
++++ b/smartcoach_ciclismo/app/templates/injury/checkin.html
+@@ -1,47 +1,56 @@
+ {% extends "base.html" %}
++{% block title %}Daily Check-in - SmartCoach{% endblock %}
+ {% block content %}
+ {% set v = values if values else {} %}
+ <div class="row justify-content-center sc-action">
+     <div class="col-md-9 col-lg-7">
+         <div class="card">
+-            <div class="card-header">Seguimiento diario de lesiones</div>
++            <div class="card-header">Daily injury check-in</div>
+             <div class="card-body">
+-                <p class="sc-note">Estos datos son los que más influyen en el riesgo de lesión.</p>
++                <p class="sc-note mt-0">These inputs have the biggest influence on your injury risk. It takes about a minute.</p>
+                 <form method="POST">
+-                    <h6 class="sc-subtitle">¿Cómo amaneciste?</h6>
++                    <h2 class="sc-subtitle">How do you feel today?</h2>
+                     <div class="row">
+                         <div class="col-md-4 mb-3">
+-                            <label class="form-label">Recuperación (0-100)</label>
+-                            <input type="number" name="recovery_score" min="0" max="100" class="form-control" value="{{ v.get('recovery_score','') }}" required>
++                            <label for="recovery_score" class="form-label">Recovery (0-100)</label>
++                            <input type="number" id="recovery_score" name="recovery_score" min="0" max="100" class="form-control" value="{{ v.get('recovery_score','') }}" aria-describedby="recovery-help" required>
++                            <div id="recovery-help" class="form-text">0 = not recovered, 100 = fully recovered.</div>
+                         </div>
+                         <div class="col-md-4 mb-3">
+-                            <label class="form-label">Fatiga (0-100)</label>
+-                            <input type="number" name="fatigue_index" min="0" max="100" class="form-control" value="{{ v.get('fatigue_index','') }}" required>
++                            <label for="fatigue_index" class="form-label">Fatigue (0-100)</label>
++                            <input type="number" id="fatigue_index" name="fatigue_index" min="0" max="100" class="form-control" value="{{ v.get('fatigue_index','') }}" aria-describedby="fatigue-help" required>
++                            <div id="fatigue-help" class="form-text">0 = no fatigue, 100 = exhausted.</div>
+                         </div>
+                         <div class="col-md-4 mb-3">
+-                            <label class="form-label">Calidad del sueño (1-10)</label>
+-                            <input type="number" step="0.5" name="sleep_quality" min="1" max="10" class="form-control" value="{{ v.get('sleep_quality','') }}" required>
++                            <label for="sleep_quality" class="form-label">Sleep quality (1-10)</label>
++                            <input type="number" id="sleep_quality" step="0.5" name="sleep_quality" min="1" max="10" class="form-control" value="{{ v.get('sleep_quality','') }}" aria-describedby="sleep-help" required>
++                            <div id="sleep-help" class="form-text">1 = very poor, 10 = excellent.</div>
+                         </div>
+                     </div>
+-                    <h6 class="sc-subtitle">Sesión de hoy</h6>
++                    <h2 class="sc-subtitle">Today's session</h2>
+                     <div class="row">
+                         <div class="col-md-4 mb-3">
+-                            <label class="form-label">Esfuerzo RPE (1-10)</label>
+-                            <input type="number" name="training_intensity" min="1" max="10" class="form-control" value="{{ v.get('training_intensity','') }}" required>
++                            <label for="training_intensity" class="form-label">Effort / RPE (1-10)</label>
++                            <input type="number" id="training_intensity" name="training_intensity" min="1" max="10" class="form-control" value="{{ v.get('training_intensity','') }}" aria-describedby="rpe-help" required>
++                            <div id="rpe-help" class="form-text">1 = very easy, 10 = maximal effort.</div>
+                         </div>
+                         <div class="col-md-4 mb-3">
+-                            <label class="form-label">Duración (min)</label>
+-                            <input type="number" name="training_duration" min="5" max="600" class="form-control" value="{{ v.get('training_duration','') }}" required>
++                            <label for="training_duration" class="form-label">Duration (min)</label>
++                            <input type="number" id="training_duration" name="training_duration" min="5" max="600" class="form-control" value="{{ v.get('training_duration','') }}" required>
+                         </div>
+                         <div class="col-md-4 mb-3">
+-                            <label class="form-label">FC media (opcional)</label>
+-                            <input type="number" name="heart_rate" min="30" max="220" class="form-control" value="{{ v.get('heart_rate','') }}">
++                            <label for="heart_rate" class="form-label">Average heart rate <span class="text-secondary fw-normal">(optional)</span></label>
++                            <input type="number" id="heart_rate" name="heart_rate" min="30" max="220" class="form-control" value="{{ v.get('heart_rate','') }}" aria-describedby="hr-help">
++                            <div id="hr-help" class="form-text">In beats per minute (bpm).</div>
+                         </div>
+                     </div>
+-                    <button type="submit" class="btn btn-primary w-100">Calcular riesgo</button>
++                    <button type="submit" class="btn btn-primary w-100">Calculate risk</button>
+                 </form>
+             </div>
+         </div>
++        <div class="mt-3">
++            <a href="{{ url_for('injury.index') }}" class="btn btn-outline-secondary">Back to injury tracking</a>
++        </div>
+     </div>
+ </div>
+ {% endblock %}
+diff --git a/smartcoach_ciclismo/app/templates/injury/index.html b/smartcoach_ciclismo/app/templates/injury/index.html
+index 1aaf518..b53f451 100644
+--- a/smartcoach_ciclismo/app/templates/injury/index.html
++++ b/smartcoach_ciclismo/app/templates/injury/index.html
+@@ -1,36 +1,60 @@
+ {% extends "base.html" %}
++{% block title %}Injury Tracking - SmartCoach{% endblock %}
+ {% block content %}
+-<div class="d-flex justify-content-between align-items-center mb-3">
+-    <h2 class="sc-h1 mb-0">Seguimiento de lesiones</h2>
++<header class="sc-page-header mb-4">
+     <div>
+-        <a href="{{ url_for('injury.profile') }}" class="btn btn-outline-secondary me-2">Perfil de ciclista</a>
+-        <a href="{{ url_for('injury.checkin') }}" class="btn btn-primary">Nuevo chequeo</a>
++        <h1 class="sc-h1 mb-1">Injury tracking</h1>
++        <p class="text-secondary mb-0">Your check-ins from the last 30 days.</p>
+     </div>
+-</div>
++    <div class="sc-page-actions">
++        <a href="{{ url_for('injury.checkin') }}" class="btn btn-primary">New check-in</a>
++        <a href="{{ url_for('injury.profile') }}" class="btn btn-outline-secondary">Cyclist profile</a>
++    </div>
++</header>
+ {% if checkins %}
+-<div class="card mb-3"><div class="card-body">
+-    <canvas id="injuryChart" height="90"></canvas>
+-</div></div>
++<section class="sc-panel mb-3" aria-labelledby="injury-chart-title">
++    <h2 class="sc-h2" id="injury-chart-title">Recovery vs. fatigue</h2>
++    <div class="sc-chart">
++        <canvas id="injuryChart" role="img"
++                aria-label="Line chart comparing your recovery and fatigue scores over the last 30 days"></canvas>
++    </div>
++</section>
+ <div class="card">
+-    <table class="table mb-0">
+-        <thead><tr><th>Fecha</th><th>Riesgo</th><th>Recuperación</th><th>Fatiga</th><th>Sueño</th><th>Carga (RPE×min)</th><th></th></tr></thead>
+-        <tbody>
+-        {% for c in checkins %}
+-            <tr>
+-                <td>{{ c.date.strftime('%d/%m/%Y') }}</td>
+-                <td><span class="badge" style="background: var(--sc-{{ level_css[c.risk_level] }}-bar); color: var(--sc-{{ level_css[c.risk_level] }}-on);">{{ risk_text[c.risk_level][0] }}</span></td>
+-                <td>{{ c.recovery_score }}</td><td>{{ c.fatigue_index }}</td><td>{{ c.sleep_quality }}</td><td>{{ c.training_load }}</td>
+-                <td><a href="{{ url_for('injury.result', checkin_id=c.id) }}">Ver</a></td>
+-            </tr>
+-        {% endfor %}
+-        </tbody>
+-    </table>
++    <div class="table-responsive">
++        <table class="table table-hover align-middle mb-0">
++            <thead>
++                <tr>
++                    <th scope="col">Date</th>
++                    <th scope="col">Risk</th>
++                    <th scope="col">Recovery</th>
++                    <th scope="col">Fatigue</th>
++                    <th scope="col">Sleep</th>
++                    <th scope="col">Load (RPE &times; min)</th>
++                    <th scope="col"><span class="visually-hidden">Details</span></th>
++                </tr>
++            </thead>
++            <tbody>
++            {% for c in checkins %}
++                <tr>
++                    <td class="text-nowrap">{{ c.date.strftime('%b %d, %Y') }}</td>
++                    <td><span class="badge" style="background: var(--sc-{{ level_css[c.risk_level] }}-bar); color: var(--sc-{{ level_css[c.risk_level] }}-on);">{{ risk_text[c.risk_level][0] }}</span></td>
++                    <td>{{ c.recovery_score }}</td>
++                    <td>{{ c.fatigue_index }}</td>
++                    <td>{{ c.sleep_quality }}</td>
++                    <td>{{ c.training_load }}</td>
++                    <td class="text-end"><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('injury.result', checkin_id=c.id) }}">View</a></td>
++                </tr>
++            {% endfor %}
++            </tbody>
++        </table>
++    </div>
+ </div>
+ {% else %}
+-<div class="card"><div class="card-body text-center">
+-    <p class="sc-note mb-3">Aún no tienes chequeos en los últimos 30 días.</p>
+-    <a href="{{ url_for('injury.checkin') }}" class="btn btn-primary">Hacer mi primer chequeo</a>
+-</div></div>
++<section class="sc-panel text-center py-5">
++    <h2 class="sc-h2">No check-ins in the last 30 days</h2>
++    <p class="text-secondary">A daily check-in takes about a minute and shows how your injury risk is trending.</p>
++    <a href="{{ url_for('injury.checkin') }}" class="btn btn-primary">Do your first check-in</a>
++</section>
+ {% endif %}
+ {% endblock %}
+ {% block scripts %}
+@@ -41,9 +65,16 @@ const d = {{ chart|tojson }};
+ new Chart(document.getElementById('injuryChart'), {
+   type: 'line',
+   data: { labels: d.labels, datasets: [
+-    { label: 'Recuperación', data: d.recovery, borderColor: '#1f8a4c', tension: .3 },
+-    { label: 'Fatiga', data: d.fatigue, borderColor: '#c8352b', tension: .3 } ] },
+-  options: { scales: { y: { min: 0, max: 100 } } }
++    { label: 'Recovery', data: d.recovery, borderColor: '#1f8a4c', backgroundColor: '#1f8a4c', tension: .3 },
++    { label: 'Fatigue', data: d.fatigue, borderColor: '#c8352b', backgroundColor: '#c8352b', tension: .3 } ] },
++  options: {
++    responsive: true,
++    maintainAspectRatio: false,
++    scales: {
++      y: { min: 0, max: 100, title: { display: true, text: 'Score (0-100)' } },
++      x: { title: { display: true, text: 'Date' } }
++    }
++  }
+ });
+ </script>
+ {% endif %}
+diff --git a/smartcoach_ciclismo/app/templates/injury/profile.html b/smartcoach_ciclismo/app/templates/injury/profile.html
+index 20ae6df..e974c99 100644
+--- a/smartcoach_ciclismo/app/templates/injury/profile.html
++++ b/smartcoach_ciclismo/app/templates/injury/profile.html
+@@ -1,16 +1,17 @@
+ {% extends "base.html" %}
++{% block title %}Cyclist Profile - SmartCoach{% endblock %}
+ {% macro num(v, name, label, min, max, step='1', req=True) %}
+ <div class="col-md-4 mb-3">
+-    <label class="form-label">{{ label }}{% if not req %} (opcional){% endif %}</label>
+-    <input type="number" name="{{ name }}" min="{{ min }}" max="{{ max }}" step="{{ step }}" class="form-control"
++    <label for="{{ name }}" class="form-label">{{ label }}{% if not req %} <span class="text-secondary fw-normal">(optional)</span>{% endif %}</label>
++    <input type="number" id="{{ name }}" name="{{ name }}" min="{{ min }}" max="{{ max }}" step="{{ step }}" class="form-control"
+            value="{{ v.get(name, '') }}" {% if req %}required{% endif %}>
+ </div>
+ {% endmacro %}
+ {% macro sel(v, name, label, options) %}
+ <div class="col-md-4 mb-3">
+-    <label class="form-label">{{ label }}</label>
+-    <select name="{{ name }}" class="form-select">
+-        <option value="">No sé / prefiero no decir</option>
++    <label for="{{ name }}" class="form-label">{{ label }}</label>
++    <select id="{{ name }}" name="{{ name }}" class="form-select">
++        <option value="">I don't know / prefer not to say</option>
+         {% for code, text in options %}
+         <option value="{{ code }}" {% if v.get(name) == code|string %}selected{% endif %}>{{ text }}</option>
+         {% endfor %}
+@@ -31,58 +32,58 @@
+ <div class="row justify-content-center sc-action">
+     <div class="col-md-10 col-lg-8">
+         {% if result %}
+-        <div class="card mb-3" style="background: var(--sc-{{ result.css }}-bg); color: var(--sc-{{ result.css }}-fg);">
++        <div class="card mb-3" style="background: var(--sc-{{ result.css }}-bg); color: var(--sc-{{ result.css }}-fg);" role="status">
+             <div class="card-body">
+                 <h1 class="sc-h1">{{ result.label }}</h1>
+                 <p class="mb-3">{{ result.message }}</p>
+-                <p class="mb-0">Probabilidad estimada de antecedente de lesión:
++                <p class="mb-0">Estimated probability of a previous injury:
+                     <strong>{{ (result.prob_injury * 100)|round(0)|int }}%</strong></p>
+             </div>
+         </div>
+         {% endif %}
+         <div class="card">
+-            <div class="card-header">Perfil de ciclista</div>
++            <div class="card-header">Cyclist profile</div>
+             <div class="card-body">
+-                <p class="sc-note">Estima la probabilidad de haber tenido lesiones según tu perfil. Es orientativo.</p>
++                <p class="sc-note mt-0">Estimates how likely it is that you have had cycling injuries, based on your profile. For guidance only.</p>
+                 <form method="POST">
+-                    <h6 class="sc-subtitle">Datos personales</h6>
++                    <h2 class="sc-subtitle">Personal details</h2>
+                     <div class="row">
+-                        {{ num(v, 'Age', 'Edad', 10, 90) }}
+-                        {{ num(v, 'Height', 'Estatura (cm)', 120, 220) }}
+-                        {{ num(v, 'Bodymass', 'Peso (kg)', 30, 200, '0.1') }}
+-                        {{ sel(v, 'Gender', 'Género', [(0, 'Mujer'), (1, 'Hombre')]) }}
++                        {{ num(v, 'Age', 'Age', 10, 90) }}
++                        {{ num(v, 'Height', 'Height (cm)', 120, 220) }}
++                        {{ num(v, 'Bodymass', 'Weight (kg)', 30, 200, '0.1') }}
++                        {{ sel(v, 'Gender', 'Gender', [(0, 'Woman'), (1, 'Man')]) }}
+                     </div>
+-                    <h6 class="sc-subtitle">Tu ciclismo</h6>
++                    <h2 class="sc-subtitle">Your cycling</h2>
+                     <div class="row">
+-                        {{ num(v, 'Frequency_cycling', 'Salidas por semana', 1, 14) }}
+-                        {{ num(v, 'Hours_week_cycling', 'Horas por semana', 0.5, 60, '0.5') }}
+-                        {{ num(v, 'Km_week', 'Km por semana', 0, 2000) }}
+-                        {{ num(v, 'Experience', 'Años de experiencia', 0, 70) }}
+-                        {{ num(v, 'Speed', 'Velocidad media (km/h)', 5, 70, '0.5', False) }}
+-                        {{ num(v, 'TOTALKM', 'Km semanales totales', 0, 3000, '1', False) }}
+-                        {{ sel(v, 'Discipline', 'Disciplina', [(1, 'Ruta / pista'), (2, 'Montaña (MTB)'), (3, 'Triatlón')]) }}
+-                        {{ sel(v, 'Purpose', 'Objetivo', [(1, 'Competición profesional'), (2, 'Competición aficionada'), (3, 'Recreación')]) }}
+-                        {{ sel(v, 'Terrain', 'Terreno', [(1, 'Carretera / ciudad'), (2, 'Trocha / sendero')]) }}
+-                        {{ sel(v, 'Coach', 'Entrenador', [(0, 'No'), (1, 'Sí')]) }}
++                        {{ num(v, 'Frequency_cycling', 'Rides per week', 1, 14) }}
++                        {{ num(v, 'Hours_week_cycling', 'Hours per week', 0.5, 60, '0.5') }}
++                        {{ num(v, 'Km_week', 'Km per week', 0, 2000) }}
++                        {{ num(v, 'Experience', 'Years of experience', 0, 70) }}
++                        {{ num(v, 'Speed', 'Average speed (km/h)', 5, 70, '0.5', False) }}
++                        {{ num(v, 'TOTALKM', 'Total weekly km', 0, 3000, '1', False) }}
++                        {{ sel(v, 'Discipline', 'Discipline', [(1, 'Road / track'), (2, 'Mountain (MTB)'), (3, 'Triathlon')]) }}
++                        {{ sel(v, 'Purpose', 'Goal', [(1, 'Professional competition'), (2, 'Amateur competition'), (3, 'Recreation')]) }}
++                        {{ sel(v, 'Terrain', 'Terrain', [(1, 'Road / city'), (2, 'Trail / off-road')]) }}
++                        {{ sel(v, 'Coach', 'Coach', [(0, 'No'), (1, 'Yes')]) }}
+                     </div>
+-                    <h6 class="sc-subtitle">Tu bicicleta</h6>
++                    <h2 class="sc-subtitle">Your bike</h2>
+                     <div class="row">
+-                        {{ sel(v, 'Bike_quality', 'Calidad de la bici', [(1, 'Gama baja'), (2, 'Gama media'), (3, 'Gama alta')]) }}
+-                        {{ sel(v, 'Comfort_saddle', 'Comodidad del sillín', [(2, 'Cómodo'), (3, 'Incómodo')]) }}
+-                        {{ sel(v, 'Comfort_posture', 'Comodidad de la postura', [(2, 'Cómoda'), (3, 'Incómoda')]) }}
++                        {{ sel(v, 'Bike_quality', 'Bike quality', [(1, 'Entry level'), (2, 'Mid range'), (3, 'High end')]) }}
++                        {{ sel(v, 'Comfort_saddle', 'Saddle comfort', [(2, 'Comfortable'), (3, 'Uncomfortable')]) }}
++                        {{ sel(v, 'Comfort_posture', 'Posture comfort', [(2, 'Comfortable'), (3, 'Uncomfortable')]) }}
+                     </div>
+-                    <h6 class="sc-subtitle">Complementas con</h6>
++                    <h2 class="sc-subtitle">You also train</h2>
+                     <div class="row">
+                         {{ chk(v, 'Training_core', 'Core') }}
+-                        {{ chk(v, 'Training_flexibility', 'Flexibilidad') }}
+-                        {{ chk(v, 'Training_strength', 'Fuerza / pesas') }}
++                        {{ chk(v, 'Training_flexibility', 'Flexibility') }}
++                        {{ chk(v, 'Training_strength', 'Strength / weights') }}
+                     </div>
+-                    <button type="submit" class="btn btn-primary w-100">Calcular</button>
++                    <button type="submit" class="btn btn-primary w-100">Calculate</button>
+                 </form>
+             </div>
+         </div>
+         <div class="mt-3">
+-            <a href="{{ url_for('injury.index') }}" class="btn btn-outline-secondary">Volver a lesiones</a>
++            <a href="{{ url_for('injury.index') }}" class="btn btn-outline-secondary">Back to injury tracking</a>
+         </div>
+     </div>
+ </div>
+diff --git a/smartcoach_ciclismo/app/templates/injury/result.html b/smartcoach_ciclismo/app/templates/injury/result.html
+index dd04b9d..a64d37b 100644
+--- a/smartcoach_ciclismo/app/templates/injury/result.html
++++ b/smartcoach_ciclismo/app/templates/injury/result.html
+@@ -1,28 +1,36 @@
+ {% extends "base.html" %}
++{% block title %}Check-in Result - SmartCoach{% endblock %}
+ {% block content %}
+ <div class="row justify-content-center">
+     <div class="col-md-9 col-lg-7">
+         <div class="card" style="background: var(--sc-{{ css }}-bg); color: var(--sc-{{ css }}-fg);">
+             <div class="card-body">
++                <p class="small mb-1">Check-in of {{ c.date.strftime('%b %d, %Y') }}</p>
+                 <h1 class="sc-h1">{{ label }}</h1>
+-                <p class="mb-3">{{ message }}</p>
+-                <p class="small mb-1">Probabilidades del modelo</p>
+-                <ul class="list-unstyled mb-0">
+-                    <li>Bajo: {{ (c.prob_low * 100)|round(0)|int }}%</li>
+-                    <li>Medio: {{ (c.prob_medium * 100)|round(0)|int }}%</li>
+-                    <li>Alto: {{ (c.prob_high * 100)|round(0)|int }}%</li>
+-                </ul>
++                <p class="mb-4">{{ message }}</p>
++                <h2 class="h6 mb-2">Model probabilities</h2>
++                {% for name, prob, lvl in [('Low', c.prob_low, 'low'), ('Medium', c.prob_medium, 'med'), ('High', c.prob_high, 'high')] %}
++                {% set pct = ((prob or 0) * 100)|round(0)|int %}
++                <div class="sc-prob">
++                    <span class="sc-prob__name">{{ name }}</span>
++                    <div class="progress" role="progressbar" aria-label="{{ name }} risk probability"
++                         aria-valuenow="{{ pct }}" aria-valuemin="0" aria-valuemax="100">
++                        <div class="progress-bar" style="width: {{ pct }}%; background: var(--sc-{{ lvl }}-bar);"></div>
++                    </div>
++                    <span class="sc-prob__pct">{{ pct }}%</span>
++                </div>
++                {% endfor %}
+             </div>
+         </div>
+         <div class="card mt-3">
+-            <div class="card-header">Recomendaciones</div>
++            <div class="card-header">Recommendations</div>
+             <ul class="list-group list-group-flush">
+                 {% for t in tips %}<li class="list-group-item">{{ t }}</li>{% endfor %}
+             </ul>
+         </div>
+         <div class="mt-3">
+-            <a href="{{ url_for('injury.index') }}" class="btn btn-outline-secondary me-2">Ver historial</a>
+-            <a href="{{ url_for('injury.checkin') }}" class="btn btn-primary">Nuevo chequeo</a>
++            <a href="{{ url_for('injury.index') }}" class="btn btn-outline-secondary me-2">View history</a>
++            <a href="{{ url_for('injury.checkin') }}" class="btn btn-primary">New check-in</a>
+         </div>
+     </div>
+ </div>
+diff --git a/smartcoach_ciclismo/app/templates/plans/generate.html b/smartcoach_ciclismo/app/templates/plans/generate.html
+index 00d37fe..2743764 100644
+--- a/smartcoach_ciclismo/app/templates/plans/generate.html
++++ b/smartcoach_ciclismo/app/templates/plans/generate.html
+@@ -1,4 +1,5 @@
+ {% extends "base.html" %}
++{% block title %}Training Plan - SmartCoach{% endblock %}
+ {% block content %}
+ {% set v = values if values else {} %}
+ {% set l = last %}
+@@ -6,41 +7,44 @@
+     <div class="col-md-9 col-lg-7">
+         <div class="card">
+             <div class="card-body">
+-                <h1 class="sc-h1 mb-2 text-center">Generador de Plan Inteligente</h1>
++                <h1 class="sc-h1 mb-2 text-center">Smart Training Plan Generator</h1>
+                 <p class="sc-note mb-4 text-center">
+-                    Ingresa tus datos actuales: el modelo de Random Forest evaluará tu perfil
+-                    y te asignará tu categoría ideal.
++                    Enter your current data. A Random Forest model will assess your profile
++                    and assign the plan level that fits you best.
+                 </p>
+                 <form method="POST">
+                     <div class="row">
+                         <div class="col-md-6 mb-3">
+-                            <label class="form-label">Edad</label>
+-                            <input type="number" name="age" min="10" max="90" class="form-control"
++                            <label for="age" class="form-label">Age</label>
++                            <input type="number" id="age" name="age" min="10" max="90" class="form-control"
+                                    value="{{ v.get('age', l.age if l else '') }}" required>
+                         </div>
+                         <div class="col-md-6 mb-3">
+-                            <label class="form-label">Peso (kg)</label>
+-                            <input type="number" step="0.1" name="weight_kg" min="30" max="200" class="form-control"
++                            <label for="weight_kg" class="form-label">Weight (kg)</label>
++                            <input type="number" id="weight_kg" step="0.1" name="weight_kg" min="30" max="200" class="form-control"
+                                    value="{{ v.get('weight_kg', l.weight_kg if l else '') }}" required>
+                         </div>
+                         <div class="col-md-4 mb-3">
+-                            <label class="form-label">Horas / semana</label>
+-                            <input type="number" step="0.1" name="weekly_hours" min="0.5" max="40" class="form-control"
+-                                   value="{{ v.get('weekly_hours', l.weekly_hours if l else '') }}" required>
++                            <label for="weekly_hours" class="form-label">Hours per week</label>
++                            <input type="number" id="weekly_hours" step="0.1" name="weekly_hours" min="0.5" max="40" class="form-control"
++                                   value="{{ v.get('weekly_hours', l.weekly_hours if l else '') }}" aria-describedby="hours-help" required>
++                            <div id="hours-help" class="form-text">Hours you can train each week.</div>
+                         </div>
+                         <div class="col-md-4 mb-3">
+-                            <label class="form-label">FC reposo (lpm)</label>
+-                            <input type="number" name="resting_heart_rate" min="30" max="120" class="form-control"
+-                                   value="{{ v.get('resting_heart_rate', l.resting_heart_rate if l else '') }}" required>
++                            <label for="resting_heart_rate" class="form-label">Resting heart rate (bpm)</label>
++                            <input type="number" id="resting_heart_rate" name="resting_heart_rate" min="30" max="120" class="form-control"
++                                   value="{{ v.get('resting_heart_rate', l.resting_heart_rate if l else '') }}" aria-describedby="hr-help" required>
++                            <div id="hr-help" class="form-text">Measured when you wake up.</div>
+                         </div>
+                         <div class="col-md-4 mb-3">
+-                            <label class="form-label">TSS acumulado</label>
+-                            <input type="number" step="0.1" name="tss_acumulado" min="0" class="form-control"
+-                                   value="{{ v.get('tss_acumulado', l.tss_acumulado if l else 0) }}" required>
++                            <label for="tss_acumulado" class="form-label">Accumulated TSS</label>
++                            <input type="number" id="tss_acumulado" step="0.1" name="tss_acumulado" min="0" class="form-control"
++                                   value="{{ v.get('tss_acumulado', l.tss_acumulado if l else 0) }}" aria-describedby="tss-help" required>
++                            <div id="tss-help" class="form-text">Training Stress Score. Enter 0 if you don't track it.</div>
+                         </div>
+                     </div>
+-                    {% if l %}<p class="sc-note">Prellenado con tu último plan; actualízalo si cambió.</p>{% endif %}
+-                    <button type="submit" class="btn btn-primary btn-lg w-100">Generar mi plan ahora</button>
++                    {% if l %}<p class="sc-note">Pre-filled from your last plan; update anything that has changed.</p>{% endif %}
++                    <button type="submit" class="btn btn-primary btn-lg w-100">Generate my plan</button>
+                 </form>
+             </div>
+         </div>
+diff --git a/smartcoach_ciclismo/app/templates/plans/view.html b/smartcoach_ciclismo/app/templates/plans/view.html
+index f5a5e09..be0baa5 100644
+--- a/smartcoach_ciclismo/app/templates/plans/view.html
++++ b/smartcoach_ciclismo/app/templates/plans/view.html
+@@ -1,81 +1,87 @@
+ {% extends "base.html" %}
++{% block title %}Your Plan - SmartCoach{% endblock %}
+ {% block content %}
+-<div class="card border-primary shadow mt-4">
++<div class="card border-primary shadow-sm mt-2">
+     <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+-        <h4 class="mb-0">Detalle de tu Plan de Entrenamiento 🚴‍♂️</h4>
+-        <span class="badge bg-light text-primary">IA Completada</span>
++        <h1 class="h4 mb-0">Your training plan</h1>
++        <span class="badge bg-light text-primary">Model result</span>
+     </div>
+-    <div class="card-body text-center p-5">
+-        <h5 class="text-muted mb-4">Según el análisis de nuestro modelo predictivo, este es tu enfoque ideal:</h5>
+-        
+-        <h1 class="text-primary fw-bold mt-4 mb-2">{{ recomendacion }}</h1>
+-        <p class="lead text-secondary mb-4 px-4">{{ descripcion }}</p>
+-        
++    <div class="card-body text-center p-4 p-md-5">
++        <h2 class="h5 text-muted mb-4">Based on our predictive model's analysis, this is your ideal focus:</h2>
++
++        <p class="display-6 text-primary fw-bold mt-4 mb-2">{{ recomendacion }}</p>
++        <p class="lead text-secondary mb-2 px-md-4">{{ descripcion }}</p>
++        <p class="sc-note mt-0">
++            Plan period (4 weeks): {{ plan.start_date.strftime('%b %d, %Y') }} &ndash; {{ plan.end_date.strftime('%b %d, %Y') }}
++        </p>
++
+         <hr class="my-4">
+-        
++
+         <div class="row text-start mt-4">
+             <div class="col-md-6">
+-                <p class="fw-bold mb-2 text-primary">Variables procesadas (Random Forest):</p>
+-                <div class="bg-light p-3 rounded border">
+-                    <ul class="list-unstyled mb-0">
+-                        {% for key, value in datos.items() %}
+-                            <li class="mb-1">✔️ <strong>{{ key }}:</strong> {{ value }}</li>
+-                        {% endfor %}
+-                    </ul>
+-                </div>
++                <h3 class="h6 fw-bold mb-2 text-primary">Data used for your plan</h3>
++                <ul class="list-group">
++                    {% for key, value in datos.items() %}
++                        <li class="list-group-item d-flex justify-content-between">
++                            <span class="text-secondary">{{ key }}</span>
++                            <strong>{{ value }}</strong>
++                        </li>
++                    {% endfor %}
++                </ul>
+             </div>
+-            
++
+             <div class="col-md-6 mt-4 mt-md-0">
+-                <p class="fw-bold mb-2 text-info">¿Cómo calcula la IA tu nivel?</p>
++                <h3 class="h6 fw-bold mb-2 text-primary">How is your level calculated?</h3>
+                 <div class="accordion shadow-sm" id="explicacionMetricas">
+-                    
++
+                     <div class="accordion-item">
+-                        <h2 class="accordion-header">
+-                            <button class="accordion-button py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseHoras" aria-expanded="true">
+-                                ⏱️ Disponibilidad (Horas)
++                        <h4 class="accordion-header">
++                            <button class="accordion-button py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseHoras" aria-expanded="true" aria-controls="collapseHoras">
++                                Availability (hours)
+                             </button>
+-                        </h2>
++                        </h4>
+                         <div id="collapseHoras" class="accordion-collapse collapse show" data-bs-parent="#explicacionMetricas">
+                             <div class="accordion-body small text-muted">
+-                                Es el factor principal. La Inteligencia Artificial sabe que un plan Avanzado exige más de 12 horas a la semana. Si cuentas con menos de 6 horas, te asignará un plan de Acondicionamiento Base para asegurar que puedas cumplirlo.
++                                This is the main factor. The model has learned that an Advanced plan requires more than 12 hours per week. If you have fewer than 6 hours, it will assign a Base Conditioning plan so you can realistically follow it.
+                             </div>
+                         </div>
+                     </div>
+-                    
++
+                     <div class="accordion-item">
+-                        <h2 class="accordion-header">
+-                            <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFC">
+-                                ❤️ Frecuencia Cardíaca (Reposo)
++                        <h4 class="accordion-header">
++                            <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFC" aria-expanded="false" aria-controls="collapseFC">
++                                Resting heart rate
+                             </button>
+-                        </h2>
++                        </h4>
+                         <div id="collapseFC" class="accordion-collapse collapse" data-bs-parent="#explicacionMetricas">
+                             <div class="accordion-body small text-muted">
+-                                Funciona como indicador de tu "motor" actual. Un corazón entrenado (nivel avanzado) bombea más sangre con menos esfuerzo, rondando los 40-55 lpm. Valores sobre 70 lpm inclinan a la IA a sugerir planes de intensidad moderada.
++                                It works as an indicator of your current "engine". A trained heart (advanced level) pumps more blood with less effort, at around 40-55 bpm. Values above 70 bpm lead the model to suggest moderate-intensity plans.
+                             </div>
+                         </div>
+                     </div>
+-                    
++
+                     <div class="accordion-item">
+-                        <h2 class="accordion-header">
+-                            <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTSS">
+-                                🔋 Experiencia (TSS)
++                        <h4 class="accordion-header">
++                            <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTSS" aria-expanded="false" aria-controls="collapseTSS">
++                                Experience (TSS)
+                             </button>
+-                        </h2>
++                        </h4>
+                         <div id="collapseTSS" class="accordion-collapse collapse" data-bs-parent="#explicacionMetricas">
+                             <div class="accordion-body small text-muted">
+-                                El Training Stress Score acumulado le dice al modelo cuánto castigo previo soportan tus músculos. Un TSS inicial de 0 indica que empiezas de cero, limitando las cargas máximas para proteger tus rodillas y articulaciones.
++                                The accumulated Training Stress Score tells the model how much training load your body has already handled. A starting TSS of 0 means you are beginning from scratch, which limits the maximum loads to protect your knees and joints.
+                             </div>
+                         </div>
+                     </div>
+-                    
++
+                 </div>
+             </div>
+         </div>
+-        
+-        <div class="mt-5">
+-            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary me-2">Volver al Dashboard</a>
+-            <a href="{{ url_for('injury.checkin') }}" class="btn btn-primary">Hacer seguimiento de lesiones</a>
++
++        <div class="mt-5 d-flex flex-wrap justify-content-center gap-2">
++            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">Back to Dashboard</a>
++            <a href="{{ url_for('plans.generate_plan') }}" class="btn btn-outline-secondary">Generate another plan</a>
++            <a href="{{ url_for('injury.checkin') }}" class="btn btn-primary">Log an injury check-in</a>
+         </div>
+     </div>
+ </div>
+-{% endblock %}
+\ No newline at end of file
++{% endblock %}
+diff --git a/smartcoach_ciclismo/app/templates/workouts/_form.html b/smartcoach_ciclismo/app/templates/workouts/_form.html
+new file mode 100644
+index 0000000..4ab6ebc
+--- /dev/null
++++ b/smartcoach_ciclismo/app/templates/workouts/_form.html
+@@ -0,0 +1,48 @@
++{# Shared by create.html and edit.html.
++   Expects: v (dict of current values), submit_label. #}
++<form method="POST">
++    <div class="row">
++        <div class="col-md-6 mb-3">
++            <label for="date" class="form-label">Date</label>
++            <input type="date" id="date" name="date" class="form-control"
++                   value="{{ v.get('date', '') }}" required>
++        </div>
++        <div class="col-md-6 mb-3">
++            <label for="duration_min" class="form-label">Duration (min)</label>
++            <input type="number" id="duration_min" name="duration_min" min="1" max="1440" step="1"
++                   class="form-control" value="{{ v.get('duration_min', '') }}" required>
++        </div>
++        <div class="col-md-6 mb-3">
++            <label for="distance_km" class="form-label">Distance (km)</label>
++            <input type="number" id="distance_km" name="distance_km" min="0" max="1000" step="0.1"
++                   class="form-control" value="{{ v.get('distance_km', '') }}" required>
++        </div>
++        <div class="col-md-6 mb-3">
++            <label for="elevation_gain_m" class="form-label">Elevation gain (m)</label>
++            <input type="number" id="elevation_gain_m" name="elevation_gain_m" min="0" max="20000" step="1"
++                   class="form-control" value="{{ v.get('elevation_gain_m', 0) }}">
++        </div>
++        <div class="col-md-6 mb-3">
++            <label for="rpe" class="form-label">Effort / RPE (1-10)</label>
++            <input type="number" id="rpe" name="rpe" min="1" max="10" step="1" class="form-control"
++                   value="{{ v.get('rpe', '') }}" aria-describedby="rpe-help" required>
++            <div id="rpe-help" class="form-text">1 = very easy, 10 = maximal effort.</div>
++        </div>
++        <div class="col-md-6 mb-3">
++            <label for="perceived_fatigue" class="form-label">Perceived fatigue (1-10)</label>
++            <input type="number" id="perceived_fatigue" name="perceived_fatigue" min="1" max="10" step="1"
++                   class="form-control" value="{{ v.get('perceived_fatigue', 1) }}" aria-describedby="fatigue-help" required>
++            <div id="fatigue-help" class="form-text">1 = feeling fresh, 10 = completely exhausted.</div>
++        </div>
++        <div class="col-12 mb-3">
++            <label for="notes" class="form-label">Notes <span class="text-secondary fw-normal">(optional)</span></label>
++            <textarea id="notes" name="notes" rows="3" class="form-control"
++                      placeholder="How did the ride feel? Any pain or discomfort?">{{ v.get('notes', '') }}</textarea>
++        </div>
++    </div>
++    <p class="sc-note mt-0 mb-3">The training load (TSS) is estimated automatically from duration and effort.</p>
++    <div class="d-flex gap-2">
++        <button type="submit" class="btn btn-primary">{{ submit_label }}</button>
++        <a href="{{ url_for('workouts.list_workouts') }}" class="btn btn-outline-secondary">Cancel</a>
++    </div>
++</form>
+diff --git a/smartcoach_ciclismo/app/templates/workouts/create.html b/smartcoach_ciclismo/app/templates/workouts/create.html
+index e69de29..f56d548 100644
+--- a/smartcoach_ciclismo/app/templates/workouts/create.html
++++ b/smartcoach_ciclismo/app/templates/workouts/create.html
+@@ -0,0 +1,17 @@
++{% extends "base.html" %}
++{% block title %}Log Workout - SmartCoach{% endblock %}
++{% block content %}
++{% set v = values if values else {'date': today} %}
++<div class="row justify-content-center sc-action">
++    <div class="col-md-9 col-lg-7">
++        <div class="card">
++            <div class="card-body">
++                <h1 class="sc-h1 mb-1">Log a workout</h1>
++                <p class="sc-note mb-4">Record a training session to keep your load and risk level up to date.</p>
++                {% set submit_label = 'Save workout' %}
++                {% include 'workouts/_form.html' %}
++            </div>
++        </div>
++    </div>
++</div>
++{% endblock %}
+diff --git a/smartcoach_ciclismo/app/templates/workouts/edit.html b/smartcoach_ciclismo/app/templates/workouts/edit.html
+index e69de29..cc26f91 100644
+--- a/smartcoach_ciclismo/app/templates/workouts/edit.html
++++ b/smartcoach_ciclismo/app/templates/workouts/edit.html
+@@ -0,0 +1,24 @@
++{% extends "base.html" %}
++{% block title %}Edit Workout - SmartCoach{% endblock %}
++{% block content %}
++{% set v = values if values else {
++    'date': workout.date.isoformat(),
++    'duration_min': workout.duration_min,
++    'distance_km': workout.distance_km,
++    'elevation_gain_m': workout.elevation_gain_m or 0,
++    'rpe': workout.rpe,
++    'perceived_fatigue': workout.perceived_fatigue or 1,
++    'notes': workout.notes or ''} %}
++<div class="row justify-content-center sc-action">
++    <div class="col-md-9 col-lg-7">
++        <div class="card">
++            <div class="card-body">
++                <h1 class="sc-h1 mb-1">Edit workout</h1>
++                <p class="sc-note mb-4">Update the details of your session from {{ workout.date.strftime('%b %d, %Y') }}.</p>
++                {% set submit_label = 'Save changes' %}
++                {% include 'workouts/_form.html' %}
++            </div>
++        </div>
++    </div>
++</div>
++{% endblock %}
+diff --git a/smartcoach_ciclismo/app/templates/workouts/list.html b/smartcoach_ciclismo/app/templates/workouts/list.html
+index 857dbd9..4c9da6c 100644
+--- a/smartcoach_ciclismo/app/templates/workouts/list.html
++++ b/smartcoach_ciclismo/app/templates/workouts/list.html
+@@ -1,15 +1,72 @@
+ {% extends "base.html" %}
++{% block title %}My Workouts - SmartCoach{% endblock %}
+ {% block content %}
+-<div class="row mt-4">
+-    <div class="col-md-8">
+-        <h2>🚴‍♂️ Mis Entrenamientos</h2>
+-        <p>Aquí se listarán tus sesiones guardadas.</p>
++<header class="sc-page-header mb-4">
++    <div>
++        <h1 class="sc-h1 mb-1">My workouts</h1>
++        <p class="text-secondary mb-0">
++            {% if workouts %}{{ workouts|length }} session{{ '' if workouts|length == 1 else 's' }} logged.
++            {% else %}Your logged sessions will appear here.{% endif %}
++        </p>
+     </div>
+-    <div class="col-md-4 text-end">
+-        <!-- Este es el botón clave que llama a tu servicio de ML -->
+-        <a href="{{ url_for('plans.generate_plan') }}" class="btn btn-warning btn-lg shadow">
+-            🧠 Generar Plan Inteligente
+-        </a>
++    <div class="sc-page-actions">
++        <a href="{{ url_for('workouts.create_workout') }}" class="btn btn-primary">Log workout</a>
++        <a href="{{ url_for('plans.generate_plan') }}" class="btn btn-outline-secondary">Generate training plan</a>
++    </div>
++</header>
++
++{% if workouts %}
++<div class="card">
++    <div class="table-responsive">
++        <table class="table table-hover align-middle mb-0">
++            <thead>
++                <tr>
++                    <th scope="col">Date</th>
++                    <th scope="col">Duration</th>
++                    <th scope="col">Distance</th>
++                    <th scope="col">Elevation</th>
++                    <th scope="col">RPE</th>
++                    <th scope="col">Fatigue</th>
++                    <th scope="col">Load (TSS)</th>
++                    <th scope="col">Notes</th>
++                    <th scope="col"><span class="visually-hidden">Actions</span></th>
++                </tr>
++            </thead>
++            <tbody>
++            {% for w in workouts %}
++                <tr>
++                    <td class="text-nowrap">{{ w.date.strftime('%b %d, %Y') }}</td>
++                    <td>{{ w.duration_min }} min</td>
++                    <td>{{ '%.1f'|format(w.distance_km) }} km</td>
++                    <td>{{ '%.0f'|format(w.elevation_gain_m or 0) }} m</td>
++                    <td>{{ w.rpe }}/10</td>
++                    <td>{{ w.perceived_fatigue if w.perceived_fatigue is not none else '-' }}/10</td>
++                    <td>{{ '%.0f'|format(w.estimated_tss) if w.estimated_tss is not none else '-' }}</td>
++                    <td class="sc-notes-cell">{{ w.notes or '' }}</td>
++                    <td class="text-nowrap text-end">
++                        <a class="btn btn-sm btn-outline-secondary"
++                           href="{{ url_for('workouts.edit_workout', workout_id=w.id) }}">Edit</a>
++                        <form method="POST" class="d-inline"
++                              action="{{ url_for('workouts.delete_workout', workout_id=w.id) }}"
++                              data-confirm="Delete this workout? This can't be undone.">
++                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
++                        </form>
++                    </td>
++                </tr>
++            {% endfor %}
++            </tbody>
++        </table>
+     </div>
+ </div>
+-{% endblock %}
+\ No newline at end of file
++<p class="sc-note">
++    RPE is your rate of perceived exertion (1 = very easy, 10 = maximal effort).
++    Load is an estimated Training Stress Score (TSS) based on duration and RPE.
++</p>
++{% else %}
++<section class="sc-panel text-center py-5">
++    <h2 class="sc-h2">No workouts yet</h2>
++    <p class="text-secondary">Log your rides to track your training load and injury risk.</p>
++    <a href="{{ url_for('workouts.create_workout') }}" class="btn btn-primary">Log your first workout</a>
++</section>
++{% endif %}
++{% endblock %}

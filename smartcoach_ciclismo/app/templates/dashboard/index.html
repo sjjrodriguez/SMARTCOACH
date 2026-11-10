@@ -5,39 +5,53 @@
 {% set r = data.risk %}
 {% set k = data.kpis %}
 
-<header class="mb-4">
-    <h1 class="sc-h1 mb-1">Tu semana</h1>
-    <p class="text-secondary mb-0">Resumen de tus últimos 7 días de entrenamiento.</p>
+<header class="sc-page-header mb-4">
+    <div>
+        <h1 class="sc-h1 mb-1">Your week</h1>
+        <p class="text-secondary mb-0">A summary of your last 7 days of training.</p>
+    </div>
+    <div class="sc-page-actions">
+        <a class="btn btn-primary" href="{{ url_for('workouts.create_workout') }}">Log workout</a>
+        <a class="btn btn-outline-secondary" href="{{ url_for('injury.checkin') }}">Daily check-in</a>
+    </div>
 </header>
 
-{# Semaforo de riesgo: el elemento principal del dashboard #}
+{# Risk traffic light: the main element of the dashboard #}
 <section class="sc-risk" data-level="{{ r.level }}" aria-labelledby="risk-title">
     <div>
         <h2 class="sc-risk__title" id="risk-title">{{ r.label }}</h2>
         <p class="sc-risk__message mb-0">{{ r.message }}</p>
     </div>
     <div class="sc-scale" role="img"
-         aria-label="Escala de riesgo de bajo a alto. Nivel actual: {{ r.label }}">
-        <span class="sc-scale__seg {% if r.level == 'low' %}is-active{% endif %}">Bajo</span>
-        <span class="sc-scale__seg {% if r.level == 'medium' %}is-active{% endif %}">Medio</span>
-        <span class="sc-scale__seg {% if r.level == 'high' %}is-active{% endif %}">Alto</span>
+         aria-label="Risk scale from low to high. Current level: {{ r.label }}">
+        <span class="sc-scale__seg {% if r.level == 'low' %}is-active{% endif %}">Low</span>
+        <span class="sc-scale__seg {% if r.level == 'medium' %}is-active{% endif %}">Medium</span>
+        <span class="sc-scale__seg {% if r.level == 'high' %}is-active{% endif %}">High</span>
     </div>
 </section>
 <p class="sc-note">
     {% if r.ratio is not none %}
-        Tu carga de 7 días es {{ r.acute }} frente a un promedio semanal previo de {{ r.chronic_weekly }}
-        (relación {{ r.ratio }}).
+        Your 7-day load is {{ r.acute }}, compared with a previous weekly average of {{ r.chronic_weekly }}
+        (ratio {{ r.ratio }}).
     {% endif %}
-    Es un indicador orientativo, no un diagnóstico médico.
+    This is a guideline, not a medical diagnosis.
 </p>
+<details class="sc-note mb-0">
+    <summary>How is this calculated?</summary>
+    <p class="mt-2 mb-0">
+        We compare the training load of your last 7 days with your average weekly load over the 4 weeks
+        before that. A ratio up to 1.3 is low risk, up to 1.5 is medium risk, and above 1.5 is high risk.
+        Load is the estimated Training Stress Score (TSS) of each workout.
+    </p>
+</details>
 
-{# Indicadores de la semana #}
+{# This week's indicators #}
 <dl class="sc-stats">
-    <div><dt>Sesiones</dt><dd>{{ k.sessions }}</dd></div>
-    <div><dt>Tiempo</dt><dd>{{ k.hours }}<span class="unit">h</span></dd></div>
-    <div><dt>Distancia</dt><dd>{{ k.km }}<span class="unit">km</span></dd></div>
-    <div><dt>Carga total</dt><dd>{{ k.load }}</dd></div>
-    <div><dt>Fatiga percibida</dt>
+    <div><dt>Sessions</dt><dd>{{ k.sessions }}</dd></div>
+    <div><dt>Time</dt><dd>{{ k.hours }}<span class="unit">h</span></dd></div>
+    <div><dt>Distance</dt><dd>{{ k.km }}<span class="unit">km</span></dd></div>
+    <div><dt>Total load</dt><dd>{{ k.load }}</dd></div>
+    <div><dt>Perceived fatigue (avg.)</dt>
         <dd>{% if k.fatigue is not none %}{{ k.fatigue }}{% else %}-{% endif %}</dd></div>
 </dl>
 
@@ -45,28 +59,28 @@
 <div class="row g-4">
     <div class="col-lg-6">
         <section class="sc-panel" aria-labelledby="daily-title">
-            <h2 class="sc-h2" id="daily-title">Carga por día</h2>
+            <h2 class="sc-h2" id="daily-title">Load per day</h2>
             <div class="sc-chart">
                 <canvas id="chart-daily" role="img"
-                        aria-label="Gráfica de barras con la carga de entrenamiento de cada uno de los últimos 7 días"></canvas>
+                        aria-label="Bar chart with the training load of each of the last 7 days"></canvas>
             </div>
         </section>
     </div>
     <div class="col-lg-6">
         <section class="sc-panel" aria-labelledby="weekly-title">
-            <h2 class="sc-h2" id="weekly-title">Carga por semana</h2>
+            <h2 class="sc-h2" id="weekly-title">Load per week</h2>
             <div class="sc-chart">
                 <canvas id="chart-weekly" role="img"
-                        aria-label="Gráfica de línea con la carga semanal de las últimas 8 semanas"></canvas>
+                        aria-label="Line chart with the weekly training load of the last 8 weeks"></canvas>
             </div>
         </section>
     </div>
 </div>
 {% else %}
 <section class="sc-panel text-center py-5">
-    <h2 class="sc-h2">Aún no tienes sesiones registradas</h2>
-    <p class="text-secondary">Registra tu primer entrenamiento y aquí verás tu carga y tu nivel de riesgo.</p>
-    <a class="btn btn-primary" href="{{ url_for('workouts.list_workouts') }}">Ir a mis entrenamientos</a>
+    <h2 class="sc-h2">You haven't logged any workouts yet</h2>
+    <p class="text-secondary">Log your first workout and you'll see your load and risk level here.</p>
+    <a class="btn btn-primary" href="{{ url_for('workouts.create_workout') }}">Log your first workout</a>
 </section>
 {% endif %}
 {% endblock %}

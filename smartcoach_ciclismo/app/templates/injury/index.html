@@ -1,36 +1,60 @@
 {% extends "base.html" %}
+{% block title %}Injury Tracking - SmartCoach{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="sc-h1 mb-0">Seguimiento de lesiones</h2>
+<header class="sc-page-header mb-4">
     <div>
-        <a href="{{ url_for('injury.profile') }}" class="btn btn-outline-secondary me-2">Perfil de ciclista</a>
-        <a href="{{ url_for('injury.checkin') }}" class="btn btn-primary">Nuevo chequeo</a>
+        <h1 class="sc-h1 mb-1">Injury tracking</h1>
+        <p class="text-secondary mb-0">Your check-ins from the last 30 days.</p>
+    </div>
+    <div class="sc-page-actions">
+        <a href="{{ url_for('injury.checkin') }}" class="btn btn-primary">New check-in</a>
+        <a href="{{ url_for('injury.profile') }}" class="btn btn-outline-secondary">Cyclist profile</a>
+    </div>
+</header>
+{% if checkins %}
+<section class="sc-panel mb-3" aria-labelledby="injury-chart-title">
+    <h2 class="sc-h2" id="injury-chart-title">Recovery vs. fatigue</h2>
+    <div class="sc-chart">
+        <canvas id="injuryChart" role="img"
+                aria-label="Line chart comparing your recovery and fatigue scores over the last 30 days"></canvas>
+    </div>
+</section>
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th scope="col">Date</th>
+                    <th scope="col">Risk</th>
+                    <th scope="col">Recovery</th>
+                    <th scope="col">Fatigue</th>
+                    <th scope="col">Sleep</th>
+                    <th scope="col">Load (RPE &times; min)</th>
+                    <th scope="col"><span class="visually-hidden">Details</span></th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for c in checkins %}
+                <tr>
+                    <td class="text-nowrap">{{ c.date.strftime('%b %d, %Y') }}</td>
+                    <td><span class="badge" style="background: var(--sc-{{ level_css[c.risk_level] }}-bar); color: var(--sc-{{ level_css[c.risk_level] }}-on);">{{ risk_text[c.risk_level][0] }}</span></td>
+                    <td>{{ c.recovery_score }}</td>
+                    <td>{{ c.fatigue_index }}</td>
+                    <td>{{ c.sleep_quality }}</td>
+                    <td>{{ c.training_load }}</td>
+                    <td class="text-end"><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('injury.result', checkin_id=c.id) }}">View</a></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
-{% if checkins %}
-<div class="card mb-3"><div class="card-body">
-    <canvas id="injuryChart" height="90"></canvas>
-</div></div>
-<div class="card">
-    <table class="table mb-0">
-        <thead><tr><th>Fecha</th><th>Riesgo</th><th>Recuperación</th><th>Fatiga</th><th>Sueño</th><th>Carga (RPE×min)</th><th></th></tr></thead>
-        <tbody>
-        {% for c in checkins %}
-            <tr>
-                <td>{{ c.date.strftime('%d/%m/%Y') }}</td>
-                <td><span class="badge" style="background: var(--sc-{{ level_css[c.risk_level] }}-bar); color: var(--sc-{{ level_css[c.risk_level] }}-on);">{{ risk_text[c.risk_level][0] }}</span></td>
-                <td>{{ c.recovery_score }}</td><td>{{ c.fatigue_index }}</td><td>{{ c.sleep_quality }}</td><td>{{ c.training_load }}</td>
-                <td><a href="{{ url_for('injury.result', checkin_id=c.id) }}">Ver</a></td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-</div>
 {% else %}
-<div class="card"><div class="card-body text-center">
-    <p class="sc-note mb-3">Aún no tienes chequeos en los últimos 30 días.</p>
-    <a href="{{ url_for('injury.checkin') }}" class="btn btn-primary">Hacer mi primer chequeo</a>
-</div></div>
+<section class="sc-panel text-center py-5">
+    <h2 class="sc-h2">No check-ins in the last 30 days</h2>
+    <p class="text-secondary">A daily check-in takes about a minute and shows how your injury risk is trending.</p>
+    <a href="{{ url_for('injury.checkin') }}" class="btn btn-primary">Do your first check-in</a>
+</section>
 {% endif %}
 {% endblock %}
 {% block scripts %}
@@ -41,9 +65,16 @@ const d = {{ chart|tojson }};
 new Chart(document.getElementById('injuryChart'), {
   type: 'line',
   data: { labels: d.labels, datasets: [
-    { label: 'Recuperación', data: d.recovery, borderColor: '#1f8a4c', tension: .3 },
-    { label: 'Fatiga', data: d.fatigue, borderColor: '#c8352b', tension: .3 } ] },
-  options: { scales: { y: { min: 0, max: 100 } } }
+    { label: 'Recovery', data: d.recovery, borderColor: '#1f8a4c', backgroundColor: '#1f8a4c', tension: .3 },
+    { label: 'Fatigue', data: d.fatigue, borderColor: '#c8352b', backgroundColor: '#c8352b', tension: .3 } ] },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      y: { min: 0, max: 100, title: { display: true, text: 'Score (0-100)' } },
+      x: { title: { display: true, text: 'Date' } }
+    }
+  }
 });
 </script>
 {% endif %}

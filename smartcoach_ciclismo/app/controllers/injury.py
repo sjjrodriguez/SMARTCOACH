@@ -18,7 +18,7 @@ def index():
                 .filter(InjuryCheckin.user_id == current_user.id, InjuryCheckin.date >= since)
                 .order_by(InjuryCheckin.date.desc(), InjuryCheckin.id.desc()).all())
     chart = {
-        'labels': [c.date.strftime('%d/%m') for c in reversed(checkins)],
+        'labels': [c.date.strftime('%b %d') for c in reversed(checkins)],
         'recovery': [c.recovery_score for c in reversed(checkins)],
         'fatigue': [c.fatigue_index for c in reversed(checkins)],
     }
@@ -39,7 +39,7 @@ def checkin():
         flash(str(e), 'danger')
         return render_template('injury/checkin.html', values=request.form), 400
     except Exception as e:
-        flash(f'No se pudo calcular el riesgo: {e}', 'danger')
+        flash(f'Could not calculate the risk: {e}', 'danger')
         return render_template('injury/checkin.html', values=request.form), 500
 
     record = InjuryCheckin(
@@ -51,10 +51,10 @@ def checkin():
     return redirect(url_for('injury.result', checkin_id=record.id))
 
 
-@injury_bp.route('/perfil', methods=['GET', 'POST'])
+@injury_bp.route('/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
-    """Modelo de ciclistas: probabilidad de antecedente de lesión según el perfil."""
+    """Cyclist model: probability of a previous injury based on the profile."""
     if request.method == 'GET':
         return render_template('injury/profile.html', values={}, result=None)
 
@@ -65,7 +65,7 @@ def profile():
         flash(str(e), 'danger')
         return render_template('injury/profile.html', values=request.form, result=None), 400
     except Exception as e:
-        flash(f'No se pudo calcular el perfil: {e}', 'danger')
+        flash(f'Could not calculate the profile result: {e}', 'danger')
         return render_template('injury/profile.html', values=request.form, result=None), 500
     return render_template('injury/profile.html', values=request.form, result=result)
 

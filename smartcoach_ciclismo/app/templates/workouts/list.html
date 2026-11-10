@@ -1,15 +1,72 @@
 {% extends "base.html" %}
+{% block title %}My Workouts - SmartCoach{% endblock %}
 {% block content %}
-<div class="row mt-4">
-    <div class="col-md-8">
-        <h2>🚴‍♂️ Mis Entrenamientos</h2>
-        <p>Aquí se listarán tus sesiones guardadas.</p>
+<header class="sc-page-header mb-4">
+    <div>
+        <h1 class="sc-h1 mb-1">My workouts</h1>
+        <p class="text-secondary mb-0">
+            {% if workouts %}{{ workouts|length }} session{{ '' if workouts|length == 1 else 's' }} logged.
+            {% else %}Your logged sessions will appear here.{% endif %}
+        </p>
     </div>
-    <div class="col-md-4 text-end">
-        <!-- Este es el botón clave que llama a tu servicio de ML -->
-        <a href="{{ url_for('plans.generate_plan') }}" class="btn btn-warning btn-lg shadow">
-            🧠 Generar Plan Inteligente
-        </a>
+    <div class="sc-page-actions">
+        <a href="{{ url_for('workouts.create_workout') }}" class="btn btn-primary">Log workout</a>
+        <a href="{{ url_for('plans.generate_plan') }}" class="btn btn-outline-secondary">Generate training plan</a>
+    </div>
+</header>
+
+{% if workouts %}
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th scope="col">Date</th>
+                    <th scope="col">Duration</th>
+                    <th scope="col">Distance</th>
+                    <th scope="col">Elevation</th>
+                    <th scope="col">RPE</th>
+                    <th scope="col">Fatigue</th>
+                    <th scope="col">Load (TSS)</th>
+                    <th scope="col">Notes</th>
+                    <th scope="col"><span class="visually-hidden">Actions</span></th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for w in workouts %}
+                <tr>
+                    <td class="text-nowrap">{{ w.date.strftime('%b %d, %Y') }}</td>
+                    <td>{{ w.duration_min }} min</td>
+                    <td>{{ '%.1f'|format(w.distance_km) }} km</td>
+                    <td>{{ '%.0f'|format(w.elevation_gain_m or 0) }} m</td>
+                    <td>{{ w.rpe }}/10</td>
+                    <td>{{ w.perceived_fatigue if w.perceived_fatigue is not none else '-' }}/10</td>
+                    <td>{{ '%.0f'|format(w.estimated_tss) if w.estimated_tss is not none else '-' }}</td>
+                    <td class="sc-notes-cell">{{ w.notes or '' }}</td>
+                    <td class="text-nowrap text-end">
+                        <a class="btn btn-sm btn-outline-secondary"
+                           href="{{ url_for('workouts.edit_workout', workout_id=w.id) }}">Edit</a>
+                        <form method="POST" class="d-inline"
+                              action="{{ url_for('workouts.delete_workout', workout_id=w.id) }}"
+                              data-confirm="Delete this workout? This can't be undone.">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
+<p class="sc-note">
+    RPE is your rate of perceived exertion (1 = very easy, 10 = maximal effort).
+    Load is an estimated Training Stress Score (TSS) based on duration and RPE.
+</p>
+{% else %}
+<section class="sc-panel text-center py-5">
+    <h2 class="sc-h2">No workouts yet</h2>
+    <p class="text-secondary">Log your rides to track your training load and injury risk.</p>
+    <a href="{{ url_for('workouts.create_workout') }}" class="btn btn-primary">Log your first workout</a>
+</section>
+{% endif %}
 {% endblock %}
