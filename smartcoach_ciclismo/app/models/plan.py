@@ -15,6 +15,8 @@ class TrainingPlan(db.Model):
     status = db.Column(db.String(30), default='Active')
 
     # Datos que el ciclista ingresó al pedir el plan (los 5 del modelo)
+    # Date of birth is what the cyclist enters; age is the snapshot used by the model.
+    birth_date = db.Column(db.Date, nullable=True)
     age = db.Column(db.Integer, nullable=False)
     weight_kg = db.Column(db.Float, nullable=False)
     weekly_hours = db.Column(db.Float, nullable=False)
@@ -24,6 +26,8 @@ class TrainingPlan(db.Model):
     # Resultado del modelo
     plan_label = db.Column(db.String(80), nullable=False)
     description = db.Column(db.Text)
+    # Set when this plan came from a performance-based change (not from the form).
+    change_reason = db.Column(db.Text, nullable=True)
 
     daily_sessions = db.relationship('PlanDayDetail', backref='plan', lazy='dynamic')
 

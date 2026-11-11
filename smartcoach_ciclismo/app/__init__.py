@@ -39,6 +39,8 @@ def create_app():
         # Al ejecutar la app por primera vez, esto creará automáticamente 
         # todas estas tablas directamente en tu proyecto de Supabase
         db.create_all()
+        from app.services.schema_service import ensure_columns
+        ensure_columns(db, app.logger)
 
     from app.controllers.main import main_bp
     from app.controllers.auth import auth_bp

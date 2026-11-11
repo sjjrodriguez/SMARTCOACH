@@ -24,7 +24,7 @@
                 <li class="nav-item">
                     <a class="nav-link {% if ep.startswith('plans.') %}active{% endif %}"
                        {% if ep.startswith('plans.') %}aria-current="page"{% endif %}
-                       href="{{ url_for('plans.generate_plan') }}">Training Plan</a>
+                       href="{{ url_for('plans.current_plan') }}">Training Plan</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {% if ep.startswith('injury.') %}active{% endif %}"

@@ -10,7 +10,7 @@
     'perceived_fatigue': workout.perceived_fatigue or 1,
     'notes': workout.notes or ''} %}
 <div class="row justify-content-center sc-action">
-    <div class="col-md-9 col-lg-7">
+    <div class="col-xl-10">
         <div class="card">
             <div class="card-body">
                 <h1 class="sc-h1 mb-1">Edit workout</h1>
@@ -22,3 +22,5 @@
     </div>
 </div>
 {% endblock %}
+
+{% block scripts %}<script src="{{ url_for('static', filename='js/workout_form.js') }}"></script>{% endblock %}

@@ -3,6 +3,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from app import db
 from app.models.injury import InjuryCheckin
+from app.models.plan import TrainingPlan
 from app.services.injury_service import (
     injury_predictor, parse_checkin, ValidationError, RISK_TEXT, LEVEL_CSS)
 from app.services.injury_cyclist_service import parse_profile, predict_injury
@@ -79,6 +80,9 @@ def result(checkin_id):
     label, message = RISK_TEXT[record.risk_level]
     data = {k: getattr(record, k) for k in
             ('recovery_score', 'fatigue_index', 'sleep_quality', 'training_intensity', 'training_duration')}
+    # Coming from a plan's "Log this ride": offer a way back.
+    plan = db.session.get(TrainingPlan, request.args.get('plan_id', type=int) or 0)
+    back_plan_id = plan.id if plan and plan.user_id == current_user.id else None
     return render_template('injury/result.html', c=record, label=label, message=message,
-                           css=LEVEL_CSS[record.risk_level],
+                           back_plan_id=back_plan_id, css=LEVEL_CSS[record.risk_level],
                            tips=injury_predictor.recommendations(data))

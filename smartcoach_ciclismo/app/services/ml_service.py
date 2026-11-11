@@ -16,8 +16,8 @@ PLAN_LEVELS = {
 PLAN_DESCRIPTIONS = {
     0: "Focus on building an aerobic base. Easy-paced rides of 1 to 2 hours "
        "to get your body used to training and help prevent injuries.",
-    1: "Focus on improving your cruising speed. Balances aerobic endurance "
-       "(Zone 2) with lactate-threshold work.",
+    1: "Focus on improving your cruising speed. Balances steady endurance "
+       "riding with threshold work.",
     2: "High-load structure. Includes 2 days of explosive intervals (VO2 Max) "
        "and rides of more than 4 hours.",
 }

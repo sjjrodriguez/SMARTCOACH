@@ -5,6 +5,7 @@ from flask_login import current_user, login_required
 
 from app.models.workout import Workout
 from app.services.dashboard_service import build_dashboard_data
+from app.services.routine_service import find_day
 
 main_bp = Blueprint('main', __name__)
 
@@ -25,4 +26,18 @@ def dashboard():
                 .filter(Workout.user_id == current_user.id, Workout.date >= since)
                 .order_by(Workout.date)
                 .all())
-    return render_template('dashboard/index.html', data=build_dashboard_data(workouts))
+    return render_template('dashboard/index.html', data=build_dashboard_data(workouts),
+                           today_plan=_today_session())
+
+
+def _today_session():
+    """Today's planned session and the plan-change suggestion, from the latest plan."""
+    from app.controllers.plans import latest_plan, plan_snapshot
+    plan = latest_plan(current_user.id)
+    if plan is None:
+        return None
+    routine, review = plan_snapshot(plan)
+    day = find_day(routine, date.today().isoformat())
+    spec = routine['sessions'][day['key']] if day else None
+    return {'plan_id': plan.id, 'day': day, 'spec': spec, 'level': routine['level_name'],
+            'suggestion': review['suggestion']}

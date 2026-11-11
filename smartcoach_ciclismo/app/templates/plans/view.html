@@ -1,87 +1,236 @@
 {% extends "base.html" %}
 {% block title %}Your Plan - SmartCoach{% endblock %}
 {% block content %}
-<div class="card border-primary shadow-sm mt-2">
-    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-        <h1 class="h4 mb-0">Your training plan</h1>
-        <span class="badge bg-light text-primary">Model result</span>
+{% set g = routine.guide %}
+{% set pr = routine.progress %}
+{% set sg = review.suggestion %}
+{% macro dur(m) %}{% if m >= 60 %}{{ (m // 60)|int }} h {{ (m % 60)|int }} min{% else %}{{ m }} min{% endif %}{% endmacro %}
+
+<header class="sc-page-header mb-3">
+    <div>
+        <p class="sc-eyebrow mb-1">{{ plan.start_date.strftime('%b %d') }} &ndash; {{ plan.end_date.strftime('%b %d, %Y') }} &middot; 4 weeks</p>
+        <h1 class="sc-h1 mb-1">{{ plan.plan_label }}</h1>
+        <p class="text-secondary mb-0">{{ routine.description }}</p>
     </div>
-    <div class="card-body text-center p-4 p-md-5">
-        <h2 class="h5 text-muted mb-4">Based on our predictive model's analysis, this is your ideal focus:</h2>
+    <div class="sc-page-actions">
+        <a href="{{ url_for('workouts.create_workout', plan_id=plan.id) }}" class="btn btn-primary">Log workout</a>
+    </div>
+</header>
 
-        <p class="display-6 text-primary fw-bold mt-4 mb-2">{{ recomendacion }}</p>
-        <p class="lead text-secondary mb-2 px-md-4">{{ descripcion }}</p>
-        <p class="sc-note mt-0">
-            Plan period (4 weeks): {{ plan.start_date.strftime('%b %d, %Y') }} &ndash; {{ plan.end_date.strftime('%b %d, %Y') }}
-        </p>
+{% if not is_latest %}
+<div class="alert alert-secondary">This is an earlier plan. <a href="{{ url_for('plans.current_plan') }}" class="alert-link">Go to your current plan</a>.</div>
+{% endif %}
 
-        <hr class="my-4">
+{% if plan.change_reason %}
+<p class="sc-note mt-0 mb-3">{{ plan.change_reason }}</p>
+{% endif %}
 
-        <div class="row text-start mt-4">
-            <div class="col-md-6">
-                <h3 class="h6 fw-bold mb-2 text-primary">Data used for your plan</h3>
-                <ul class="list-group">
-                    {% for key, value in datos.items() %}
-                        <li class="list-group-item d-flex justify-content-between">
-                            <span class="text-secondary">{{ key }}</span>
-                            <strong>{{ value }}</strong>
-                        </li>
+{% if is_latest and sg %}
+<section class="sc-suggest sc-suggest--{{ sg.direction }} mb-3" aria-labelledby="suggest-title">
+    <div>
+        <p class="sc-eyebrow mb-1">Plan review</p>
+        <h2 class="sc-h2 mb-1" id="suggest-title">
+            {% if sg.direction == 'up' %}You are ready for the {{ sg.to_name }} plan{% else %}We suggest the {{ sg.to_name }} plan for now{% endif %}
+        </h2>
+        <p class="mb-0">{{ sg.reason }}
+            {% if sg.direction == 'down' %}Easing off now protects you from injury and lets you come back stronger.{% endif %}</p>
+    </div>
+    <form method="POST" action="{{ url_for('plans.switch_plan', plan_id=plan.id) }}"
+          data-confirm="Switch to the {{ sg.to_name }} plan? A new 4-week cycle starts today.">
+        <input type="hidden" name="direction" value="{{ sg.direction }}">
+        <button type="submit" class="btn {{ 'btn-success' if sg.direction == 'up' else 'btn-warning' }}">Switch to {{ sg.to_name }}</button>
+    </form>
+</section>
+{% endif %}
+
+{% if is_latest and cycle_over %}
+<section class="sc-suggest mb-3">
+    <div>
+        <h2 class="sc-h2 mb-1">Your 4-week cycle is complete</h2>
+        <p class="mb-0">Keep progressing at the same level{% if sg %}, or follow the suggestion above{% endif %}.</p>
+    </div>
+    <form method="POST" action="{{ url_for('plans.next_cycle', plan_id=plan.id) }}">
+        <button type="submit" class="btn btn-primary">Start next cycle</button>
+    </form>
+</section>
+{% endif %}
+
+<ul class="sc-chips mb-3" aria-label="Data used for your plan">
+    <li>{{ plan.age }} years</li>
+    <li>{{ plan.weight_kg|round(1) }} kg</li>
+    <li>{{ plan.weekly_hours|round(1) }} h/week</li>
+    <li>{{ plan.resting_heart_rate }} bpm resting</li>
+    <li>TSS {{ plan.tss_acumulado|round|int }}</li>
+</ul>
+
+<section class="sc-progress mb-4" aria-label="Plan progress">
+    <div class="d-flex justify-content-between small mb-1">
+        <span><strong>{{ pr.done }}</strong> of {{ pr.due }} planned rides done so far</span>
+        <span class="text-secondary">{{ pr.total }} rides in the plan</span>
+    </div>
+    <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="{{ pr.total }}" aria-valuenow="{{ pr.done }}">
+        <div class="progress-bar" style="width: {{ (100 * pr.done / pr.total) if pr.total else 0 }}%"></div>
+    </div>
+</section>
+
+<ul class="nav nav-tabs sc-tabs mb-3" id="planTabs" role="tablist">
+    <li class="nav-item" role="presentation"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-schedule" type="button" role="tab">Schedule</button></li>
+    <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-progress" type="button" role="tab">Progress</button></li>
+    <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-recovery" type="button" role="tab">Rest &amp; recovery</button></li>
+    <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-nutrition" type="button" role="tab">Nutrition</button></li>
+    <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-effort" type="button" role="tab">Effort guide</button></li>
+</ul>
+
+<div class="tab-content">
+    {# ---------- Schedule: week pills + day list + session detail (built by plan.js) ---------- #}
+    <div class="tab-pane fade show active" id="tab-schedule" role="tabpanel">
+        <div id="week-pills" class="sc-weeks mb-2" role="tablist" aria-label="Plan weeks"></div>
+        <p id="week-summary" class="sc-note mt-0 mb-3" aria-live="polite"></p>
+        <div class="row g-3">
+            <div class="col-lg-5"><div id="day-list" class="sc-days" role="list"></div></div>
+            <div class="col-lg-7"><div id="day-detail" class="sc-panel sc-detail" aria-live="polite"></div></div>
+        </div>
+        <noscript><p class="sc-note">Turn on JavaScript to browse the day-by-day schedule.</p></noscript>
+    </div>
+
+    {# ---------- Progress: how you are doing vs. the plan ---------- #}
+    <div class="tab-pane fade" id="tab-progress" role="tabpanel">
+        {% set st = review.stats %}
+        {% if review.needed %}<div class="alert alert-info">{{ review.needed }}</div>{% endif %}
+        {% if review.status == 'on_track' %}<div class="alert alert-success">You are on track. Nothing to change right now.</div>{% endif %}
+        {% if review.status == 'great' and not sg %}<div class="alert alert-success">Excellent performance. You are already on the top plan, so keep it up.</div>{% endif %}
+        {% if review.status == 'fatigued' and not sg %}<div class="alert alert-warning">You look very fatigued and this is already the base plan. Ease off this week: swap hard rides for easy ones.</div>{% endif %}
+
+        <dl class="sc-stats mt-0">
+            <div><dt>Rides done</dt><dd>{{ st.rides_done }}<span class="unit">of {{ st.rides_due }}{% if st.adherence is not none %} ({{ st.adherence|int }}%){% endif %}</span></dd></div>
+            <div><dt>Time trained</dt><dd class="fs-4">{{ dur(st.minutes) }}</dd><span class="unit d-block">planned {{ dur(st.planned_minutes) }}</span></div>
+            <div><dt>Distance</dt><dd>{{ st.km }}<span class="unit">km</span></dd></div>
+            <div><dt>Avg. effort</dt><dd>{{ st.avg_rpe if st.avg_rpe is not none else '-' }}<span class="unit">RPE</span></dd></div>
+            <div><dt>Avg. fatigue</dt><dd>{{ st.avg_fatigue if st.avg_fatigue is not none else '-' }}<span class="unit">/10</span></dd></div>
+            <div><dt>Avg. speed</dt><dd>{{ st.avg_speed if st.avg_speed is not none else '-' }}<span class="unit">km/h</span></dd>
+                {% if st.speed_trend is not none %}<span class="unit d-block">{{ '+' if st.speed_trend >= 0 }}{{ st.speed_trend }} km/h vs. first rides</span>{% endif %}</div>
+        </dl>
+
+        <div class="row g-3">
+            <div class="col-lg-6">
+                <section class="sc-panel">
+                    <h2 class="sc-h2">Time per week vs. plan</h2>
+                    {% for w in review.weekly %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span><strong>Week {{ w.n }}</strong> &middot; {{ w.name }}</span>
+                            <span class="text-secondary">{{ dur(w.actual) }} of {{ dur(w.planned) }}</span>
+                        </div>
+                        <div class="progress" role="progressbar" aria-label="Week {{ w.n }} time trained" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ w.pct }}">
+                            <div class="progress-bar" style="width: {{ w.pct }}%"></div>
+                        </div>
+                    </div>
                     {% endfor %}
-                </ul>
+                </section>
             </div>
-
-            <div class="col-md-6 mt-4 mt-md-0">
-                <h3 class="h6 fw-bold mb-2 text-primary">How is your level calculated?</h3>
-                <div class="accordion shadow-sm" id="explicacionMetricas">
-
-                    <div class="accordion-item">
-                        <h4 class="accordion-header">
-                            <button class="accordion-button py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseHoras" aria-expanded="true" aria-controls="collapseHoras">
-                                Availability (hours)
-                            </button>
-                        </h4>
-                        <div id="collapseHoras" class="accordion-collapse collapse show" data-bs-parent="#explicacionMetricas">
-                            <div class="accordion-body small text-muted">
-                                This is the main factor. The model has learned that an Advanced plan requires more than 12 hours per week. If you have fewer than 6 hours, it will assign a Base Conditioning plan so you can realistically follow it.
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="accordion-item">
-                        <h4 class="accordion-header">
-                            <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFC" aria-expanded="false" aria-controls="collapseFC">
-                                Resting heart rate
-                            </button>
-                        </h4>
-                        <div id="collapseFC" class="accordion-collapse collapse" data-bs-parent="#explicacionMetricas">
-                            <div class="accordion-body small text-muted">
-                                It works as an indicator of your current "engine". A trained heart (advanced level) pumps more blood with less effort, at around 40-55 bpm. Values above 70 bpm lead the model to suggest moderate-intensity plans.
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="accordion-item">
-                        <h4 class="accordion-header">
-                            <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTSS" aria-expanded="false" aria-controls="collapseTSS">
-                                Experience (TSS)
-                            </button>
-                        </h4>
-                        <div id="collapseTSS" class="accordion-collapse collapse" data-bs-parent="#explicacionMetricas">
-                            <div class="accordion-body small text-muted">
-                                The accumulated Training Stress Score tells the model how much training load your body has already handled. A starting TSS of 0 means you are beginning from scratch, which limits the maximum loads to protect your knees and joints.
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
+            <div class="col-lg-6">
+                <section class="sc-panel">
+                    <h2 class="sc-h2">Recommendations</h2>
+                    <ul class="sc-list mb-0">{% for t in review.tips %}<li>{{ t }}</li>{% endfor %}</ul>
+                </section>
             </div>
         </div>
 
-        <div class="mt-5 d-flex flex-wrap justify-content-center gap-2">
-            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">Back to Dashboard</a>
-            <a href="{{ url_for('plans.generate_plan') }}" class="btn btn-outline-secondary">Generate another plan</a>
-            <a href="{{ url_for('injury.checkin') }}" class="btn btn-primary">Log an injury check-in</a>
+        <details class="sc-note mt-3">
+            <summary>How are plan changes decided?</summary>
+            <p class="mt-2 mb-1"><strong>Moving up</strong> needs at least 14 days and 4 logged rides, at least 85% of planned rides and 95% of planned time completed, low fatigue (about 4.5/10 or less) and a healthy latest check-in.</p>
+            <p class="mb-1"><strong>Moving down</strong> is considered after 7 days and 3 rides if your fatigue after rides averages 7/10 or more, or your check-ins show very high fatigue or very low recovery.</p>
+            <p class="mb-0">Your plan never changes on its own: you decide whether to accept a suggestion, and each change starts a new 4-week cycle.</p>
+        </details>
+    </div>
+
+    {# ---------- Rest & recovery ---------- #}
+    <div class="tab-pane fade" id="tab-recovery" role="tabpanel">
+        <div class="row g-3">
+            <div class="col-lg-6">
+                <section class="sc-panel">
+                    <h2 class="sc-h2">Recovery rules</h2>
+                    <p class="sc-stat-line"><span>Sleep target</span><strong>{{ g.sleep }}</strong></p>
+                    <ul class="sc-list">{% for r in g.recovery_rules %}<li>{{ r }}</li>{% endfor %}</ul>
+                </section>
+            </div>
+            <div class="col-lg-6">
+                <section class="sc-panel sc-panel--warn">
+                    <h2 class="sc-h2">Back off if you notice</h2>
+                    <ul class="sc-list">{% for r in g.warning_signs %}<li>{{ r }}</li>{% endfor %}</ul>
+                    <p class="mb-2">{{ g.warning_action }}</p>
+                    <a href="{{ url_for('injury.checkin') }}" class="btn btn-sm btn-primary">Log an injury check-in</a>
+                </section>
+            </div>
         </div>
+    </div>
+
+    {# ---------- Nutrition ---------- #}
+    <div class="tab-pane fade" id="tab-nutrition" role="tabpanel">
+        <div class="row g-3">
+            <div class="col-lg-7">
+                <section class="sc-panel">
+                    <h2 class="sc-h2">Daily targets for {{ plan.weight_kg|round(1) }} kg</h2>
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead><tr><th scope="col">Day type</th><th scope="col">Carbs</th><th scope="col">Protein</th></tr></thead>
+                            <tbody>
+                            {% for r in g.nutrition_rows %}
+                                <tr><th scope="row" class="fw-semibold">{{ r.label }}</th>
+                                    <td>{{ r.carbs }} <span class="text-secondary small">({{ r.carbs_per_kg }})</span></td>
+                                    <td>{{ r.protein }}</td></tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="sc-note">Click any day in the Schedule tab to see what to eat before, during and after that ride.</p>
+                </section>
+            </div>
+            <div class="col-lg-5">
+                <section class="sc-panel">
+                    <h2 class="sc-h2">On the bike</h2>
+                    <dl class="sc-dl">{% for k, v in g.during_rows %}<dt>{{ k }}</dt><dd>{{ v }}</dd>{% endfor %}</dl>
+                    <ul class="sc-list mb-0">{% for r in g.nutrition_rules %}<li>{{ r }}</li>{% endfor %}</ul>
+                </section>
+            </div>
+        </div>
+        <p class="sc-note">General guidance for healthy adults. If you have a medical condition, take medication or are pregnant, check with a doctor or sports dietitian first.</p>
+    </div>
+
+    {# ---------- Effort guide (no equipment needed) ---------- #}
+    <div class="tab-pane fade" id="tab-effort" role="tabpanel">
+        <section class="sc-panel">
+            <h2 class="sc-h2">How hard should it feel?</h2>
+            <p class="text-secondary">Every session in your plan uses these levels, so you only need the talk test. No heart-rate monitor or power meter required.</p>
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead><tr><th scope="col">Effort</th><th scope="col">RPE</th><th scope="col">How it feels</th><th scope="col">Used for</th></tr></thead>
+                    <tbody>
+                    {% for e in g.efforts %}
+                        <tr><th scope="row"><span class="sc-effort sc-effort--{{ e.label|lower|replace(' ', '-') }}">{{ e.label }}</span></th>
+                            <td>{{ e.rpe }}</td><td>{{ e.feel }}</td><td>{{ e.used }}</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p class="sc-note">RPE is your rate of perceived exertion, from 1 (very easy) to 10 (maximal). If you do use a heart-rate monitor or power meter, the same levels apply.</p>
+        </section>
     </div>
 </div>
+
+{% if g.minor_notice %}
+<div class="alert alert-info mt-3">Because you are under 18, ask a coach or doctor to confirm the intensity and nutrition numbers in this plan.</div>
+{% endif %}
+
+<details class="sc-note mt-4">
+    <summary>Why this level?</summary>
+    <p class="mt-2 mb-1"><strong>Weekly hours</strong> are the main factor: Advanced plans need more than about 12 hours per week, and under 6 hours the model assigns Base Conditioning so the plan stays realistic.</p>
+    <p class="mb-1"><strong>Resting heart rate</strong> is a proxy for fitness. A trained heart sits around 40-55 bpm, while values above 70 bpm lean toward moderate plans.</p>
+    <p class="mb-0"><strong>Accumulated TSS</strong> shows how much load you have already handled. Starting at 0 keeps maximum loads lower to protect knees and joints.</p>
+</details>
+{% endblock %}
+
+{% block scripts %}
+<script id="routine-data" type="application/json">{{ client|tojson }}</script>
+<script src="{{ url_for('static', filename='js/plan.js') }}"></script>
 {% endblock %}
