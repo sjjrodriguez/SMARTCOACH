@@ -31,23 +31,11 @@
                        {% if ep.startswith('injury.') %}aria-current="page"{% endif %}
                        href="{{ url_for('injury.index') }}">Injury Tracking</a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link {% if ep == 'main.phases' %}active{% endif %}"
-                       {% if ep == 'main.phases' %}aria-current="page"{% endif %}
-                       href="{{ url_for('main.phases') }}">Phases</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {% if ep == 'main.architecture' %}active{% endif %}"
-                       {% if ep == 'main.architecture' %}aria-current="page"{% endif %}
-                       href="{{ url_for('main.architecture') }}">Architecture</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {% if ep == 'main.project_document' %}active{% endif %}"
-                       {% if ep == 'main.project_document' %}aria-current="page"{% endif %}
-                       href="{{ url_for('main.project_document') }}">Project document</a>
-                </li>
             </ul>
             <div class="navbar-nav align-items-lg-center">
+                <a class="nav-link {% if ep == 'main.phases' %}active{% endif %}" href="{{ url_for('main.phases') }}">Phases</a>
+                <a class="nav-link {% if ep == 'main.architecture' %}active{% endif %}" href="{{ url_for('main.architecture') }}">Architecture</a>
+                <a class="nav-link {% if ep == 'main.project_document' %}active{% endif %}" href="{{ url_for('main.project_document') }}">Project document</a>
                 <span class="navbar-text text-white me-lg-3">Hello, {{ current_user.full_name }}</span>
                 <form method="POST" action="{{ url_for('auth.logout') }}" class="d-inline">
                     <button type="submit" class="btn btn-outline-light btn-sm">Log out</button>
