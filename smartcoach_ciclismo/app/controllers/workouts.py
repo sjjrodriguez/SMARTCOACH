@@ -32,10 +32,12 @@ def _planned_session(plan, iso_date):
             'effort': spec['effort'], 'rpe': spec['rpe'], 'minutes': day['minutes'], 'km': day['km']}
 
 def _check_data(form, duration_min, rpe, fatigue):
-    """Inputs for the daily injury check, taken from the workout form.
+    """Inputs for the injury check, taken from the workout form.
 
+    The check is no longer a separate page: it is filled in from the workout.
     Effort (RPE), duration and fatigue come from the workout itself, so the
-    cyclist only answers recovery, sleep and (optionally) heart rate.
+    cyclist only answers recovery, sleep and (optionally) heart rate in the
+    "Injury check" tab of the form.
     Returns None for sessions too short for the model (under 5 minutes).
     Raises ValidationError when an answer is missing or out of range.
     """
@@ -92,9 +94,6 @@ def create_workout():
             # Validate the injury-check answers first so nothing is half saved.
             check_data = _check_data(request.form, duration_min, rpe, fatigue)
 
-            # Approximate TSS computation based on duration and RPE
-            estimated_tss = (duration_min * rpe * 1.1) / 10
-
             new_workout = Workout(
                 user_id=current_user.id,
                 date=workout_date,
@@ -103,7 +102,6 @@ def create_workout():
                 elevation_gain_m=elevation_gain_m,
                 rpe=rpe,
                 perceived_fatigue=fatigue,
-                estimated_tss=round(estimated_tss, 2),
                 notes=notes
             )
             db.session.add(new_workout)
@@ -112,7 +110,7 @@ def create_workout():
             flash('Training session logged successfully.', 'success')
             plan = _owned_plan(request.form.get('plan_id'))
 
-            # Daily injury check, run right after the workout is saved.
+            # Injury check, run automatically right after the workout is saved.
             record = _run_daily_check(check_data, workout_date) if check_data else None
             if record:
                 return redirect(url_for('injury.result', checkin_id=record.id,
@@ -162,7 +160,6 @@ def edit_workout(workout_id):
             workout.rpe = int(request.form.get('rpe'))
             workout.perceived_fatigue = int(request.form.get('perceived_fatigue') or 1)
             workout.notes = request.form.get('notes', '')
-            workout.estimated_tss = round((workout.duration_min * workout.rpe * 1.1) / 10, 2)
 
             db.session.commit()
             flash('Workout updated successfully.', 'success')

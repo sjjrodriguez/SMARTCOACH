@@ -36,9 +36,7 @@ def _as_date(value):
 
 
 def session_load(w):
-    """Carga de una sesion: TSS estimado o, si no existe, RPE x minutos (sRPE)."""
-    if w.estimated_tss is not None:
-        return float(w.estimated_tss)
+    """Carga de una sesion: RPE x minutos (sRPE). Ya no se usa el TSS estimado."""
     return float((w.rpe or 0) * (w.duration_min or 0))
 
 

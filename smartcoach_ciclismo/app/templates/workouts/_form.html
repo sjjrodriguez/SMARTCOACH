@@ -1,5 +1,6 @@
 {# Shared by create.html and edit.html.
-   Expects: v (dict of current values), submit_label. Optional: planned (planned session). #}
+   Expects: v (dict of current values), submit_label. Optional: planned (planned session),
+   with_checkin (adds the second tab, "Injury check"; the check is filled in from the workout). #}
 {% set rpe_now = v.get('rpe', '')|string %}
 {% set fatigue_now = v.get('perceived_fatigue', 1) %}
 <form method="POST" id="workout-form">
@@ -7,101 +8,138 @@
 
     <div class="row g-4">
         <div class="col-lg-8">
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label for="date" class="form-label">Date</label>
-                    <input type="date" id="date" name="date" class="form-control"
-                           value="{{ v.get('date', '') }}" required>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label for="elevation_gain_m" class="form-label">Elevation gain (m)</label>
-                    <input type="number" id="elevation_gain_m" name="elevation_gain_m" min="0" max="20000" step="1"
-                           class="form-control" value="{{ v.get('elevation_gain_m', 0) }}">
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label for="duration_min" class="form-label">Duration (min)</label>
-                    <input type="number" id="duration_min" name="duration_min" min="1" max="1440" step="1"
-                           class="form-control" value="{{ v.get('duration_min', '') }}" required>
-                    <div class="sc-quick mt-2" data-quick-for="duration_min" aria-label="Quick durations">
-                        {% for m in (30, 60, 90, 120, 180) %}
-                        <button type="button" class="btn btn-sm btn-outline-secondary" data-value="{{ m }}">{{ m }}</button>
-                        {% endfor %}
-                    </div>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label for="distance_km" class="form-label">Distance (km)</label>
-                    <input type="number" id="distance_km" name="distance_km" min="0" max="1000" step="0.1"
-                           class="form-control" value="{{ v.get('distance_km', '') }}" required>
-                    <div class="sc-quick mt-2" data-quick-for="distance_km" aria-label="Quick distances">
-                        {% for k in (20, 40, 60, 100) %}
-                        <button type="button" class="btn btn-sm btn-outline-secondary" data-value="{{ k }}">{{ k }}</button>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-
-            <fieldset class="mb-4">
-                <legend class="form-label fs-6 mb-2">How hard was it? <span class="text-secondary fw-normal">(RPE)</span></legend>
-                <div class="sc-rpe" role="radiogroup">
-                    {% for n in range(1, 11) %}
-                    {% set band = 'low' if n <= 3 else ('med' if n <= 6 else 'high') %}
-                    <input type="radio" class="btn-check" name="rpe" id="rpe-{{ n }}" value="{{ n }}"
-                           {% if rpe_now == n|string %}checked{% endif %} required>
-                    <label class="sc-rpe__opt" data-band="{{ band }}" for="rpe-{{ n }}">{{ n }}</label>
-                    {% endfor %}
-                </div>
-                <p id="rpe-desc" class="sc-note mt-2 mb-0" aria-live="polite">Pick a number: 1 is very easy, 10 is maximal effort.</p>
-            </fieldset>
-
-            <div class="mb-4">
-                <label for="perceived_fatigue" class="form-label">
-                    Fatigue after the ride: <strong id="fatigue-out">{{ fatigue_now }}</strong>/10
-                    <span id="fatigue-desc" class="text-secondary fw-normal"></span>
-                </label>
-                <input type="range" class="form-range" id="perceived_fatigue" name="perceived_fatigue"
-                       min="1" max="10" step="1" value="{{ fatigue_now }}">
-                <div class="d-flex justify-content-between small text-secondary"><span>Fresh</span><span>Exhausted</span></div>
-            </div>
-
             {% if with_checkin %}
-            <fieldset class="sc-panel mb-4">
-                <legend class="sc-h2">Daily injury check</legend>
-                <p class="sc-note mt-0">Three quick answers. Your effort and fatigue above are used too, and you will see your injury risk as soon as you save.</p>
-
-                <p class="form-label mb-1" id="recovery-label">How recovered did you feel before this ride?</p>
-                <div class="sc-choice mb-3" role="radiogroup" aria-labelledby="recovery-label">
-                    {% for val, text in ((20, 'Exhausted'), (40, 'Tired'), (60, 'OK'), (80, 'Good'), (100, 'Fresh')) %}
-                    <input type="radio" class="btn-check" name="recovery_score" id="rec-{{ val }}" value="{{ val }}"
-                           {% if v.get('recovery_score', '')|string == val|string %}checked{% endif %} required>
-                    <label class="sc-choice__opt" for="rec-{{ val }}">{{ text }}</label>
-                    {% endfor %}
-                </div>
-
-                <p class="form-label mb-1" id="sleep-label">How did you sleep last night?</p>
-                <div class="sc-choice mb-3" role="radiogroup" aria-labelledby="sleep-label">
-                    {% for val, text in ((3, 'Poor'), (5, 'Fair'), (7, 'Good'), (9, 'Great')) %}
-                    <input type="radio" class="btn-check" name="sleep_quality" id="sleep-{{ val }}" value="{{ val }}"
-                           {% if v.get('sleep_quality', '')|string in (val|string, val|string ~ '.0') %}checked{% endif %} required>
-                    <label class="sc-choice__opt" for="sleep-{{ val }}">{{ text }}</label>
-                    {% endfor %}
-                </div>
-
-                <label for="heart_rate" class="form-label">Average heart rate <span class="text-secondary fw-normal">(optional, bpm)</span></label>
-                <input type="number" id="heart_rate" name="heart_rate" min="30" max="220" class="form-control w-auto"
-                       value="{{ v.get('heart_rate', '') }}">
-            </fieldset>
+            <ul class="nav nav-tabs sc-tabs mb-3" id="workoutTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="tab-workout-btn" data-bs-toggle="tab" data-bs-target="#tab-workout"
+                            type="button" role="tab" aria-controls="tab-workout" aria-selected="true">1. Workout</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="tab-check-btn" data-bs-toggle="tab" data-bs-target="#tab-check"
+                            type="button" role="tab" aria-controls="tab-check" aria-selected="false">2. Injury check</button>
+                </li>
+            </ul>
             {% endif %}
 
-            <div class="mb-3">
-                <label for="notes" class="form-label">How did the ride feel? <span class="text-secondary fw-normal">(optional)</span></label>
-                <div class="sc-quick mb-2" id="note-tags" aria-label="Quick notes">
-                    {% for t in ('Strong legs', 'Heavy legs', 'Knee pain', 'Back pain', 'Headwind', 'Hilly', 'Rain', 'Group ride') %}
-                    <button type="button" class="btn btn-sm btn-outline-secondary" data-tag="{{ t }}" aria-pressed="false">{{ t }}</button>
-                    {% endfor %}
+            <div class="tab-content">
+                {# ---------- Tab 1: the workout ---------- #}
+                <div class="tab-pane show active" id="tab-workout" role="tabpanel" aria-labelledby="tab-workout-btn">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="date" class="form-label">Date</label>
+                            <input type="date" id="date" name="date" class="form-control"
+                                   value="{{ v.get('date', '') }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="elevation_gain_m" class="form-label">Elevation gain (m)</label>
+                            <input type="number" id="elevation_gain_m" name="elevation_gain_m" min="0" max="20000" step="1"
+                                   class="form-control" value="{{ v.get('elevation_gain_m', 0) }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="duration_min" class="form-label">Duration (min)</label>
+                            <input type="number" id="duration_min" name="duration_min" min="1" max="1440" step="1"
+                                   class="form-control" value="{{ v.get('duration_min', '') }}" required>
+                            <div class="sc-quick mt-2" data-quick-for="duration_min" aria-label="Quick durations">
+                                {% for m in (30, 60, 90, 120, 180) %}
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-value="{{ m }}">{{ m }}</button>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="distance_km" class="form-label">Distance (km)</label>
+                            <input type="number" id="distance_km" name="distance_km" min="0" max="1000" step="0.1"
+                                   class="form-control" value="{{ v.get('distance_km', '') }}" required>
+                            <div class="sc-quick mt-2" data-quick-for="distance_km" aria-label="Quick distances">
+                                {% for k in (20, 40, 60, 100) %}
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-value="{{ k }}">{{ k }}</button>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <fieldset class="mb-4">
+                        <legend class="form-label fs-6 mb-2">How hard was it? <span class="text-secondary fw-normal">(RPE)</span></legend>
+                        <div class="sc-rpe" role="radiogroup">
+                            {% for n in range(1, 11) %}
+                            {% set band = 'low' if n <= 3 else ('med' if n <= 6 else 'high') %}
+                            <input type="radio" class="btn-check" name="rpe" id="rpe-{{ n }}" value="{{ n }}"
+                                   {% if rpe_now == n|string %}checked{% endif %} required>
+                            <label class="sc-rpe__opt" data-band="{{ band }}" for="rpe-{{ n }}">{{ n }}</label>
+                            {% endfor %}
+                        </div>
+                        <p id="rpe-desc" class="sc-note mt-2 mb-0" aria-live="polite">Pick a number: 1 is very easy, 10 is maximal effort.</p>
+                    </fieldset>
+
+                    <div class="mb-4">
+                        <label for="perceived_fatigue" class="form-label">
+                            Fatigue after the ride: <strong id="fatigue-out">{{ fatigue_now }}</strong>/10
+                            <span id="fatigue-desc" class="text-secondary fw-normal"></span>
+                        </label>
+                        <input type="range" class="form-range" id="perceived_fatigue" name="perceived_fatigue"
+                               min="1" max="10" step="1" value="{{ fatigue_now }}">
+                        <div class="d-flex justify-content-between small text-secondary"><span>Fresh</span><span>Exhausted</span></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">How did the ride feel? <span class="text-secondary fw-normal">(optional)</span></label>
+                        <div class="sc-quick mb-2" id="note-tags" aria-label="Quick notes">
+                            {% for t in ('Strong legs', 'Heavy legs', 'Knee pain', 'Back pain', 'Headwind', 'Hilly', 'Rain', 'Group ride') %}
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-tag="{{ t }}" aria-pressed="false">{{ t }}</button>
+                            {% endfor %}
+                        </div>
+                        <textarea id="notes" name="notes" rows="3" maxlength="500" class="form-control"
+                                  placeholder="Anything else? Any pain or discomfort?">{{ v.get('notes', '') }}</textarea>
+                        <div class="form-text text-end"><span id="notes-count">0</span>/500</div>
+                    </div>
+
+                    {% if with_checkin %}
+                    <div class="text-end">
+                        <button type="button" class="btn btn-outline-primary" data-go-tab="#tab-check-btn">Next: injury check</button>
+                    </div>
+                    {% endif %}
                 </div>
-                <textarea id="notes" name="notes" rows="3" maxlength="500" class="form-control"
-                          placeholder="Anything else? Any pain or discomfort?">{{ v.get('notes', '') }}</textarea>
-                <div class="form-text text-end"><span id="notes-count">0</span>/500</div>
+
+                {# ---------- Tab 2: injury check (filled in from the workout) ---------- #}
+                {% if with_checkin %}
+                <div class="tab-pane" id="tab-check" role="tabpanel" aria-labelledby="tab-check-btn">
+                    <p class="sc-note mt-0">
+                        Your injury check is created automatically when you save the workout. Effort, duration and fatigue
+                        are taken from the first tab, so you only answer three quick questions.
+                    </p>
+                    <dl class="sc-dl sc-panel mb-4" aria-live="polite">
+                        <dt>Effort (RPE)</dt><dd id="chk-rpe">&ndash;</dd>
+                        <dt>Duration</dt><dd id="chk-duration">&ndash;</dd>
+                        <dt>Fatigue</dt><dd id="chk-fatigue">&ndash;</dd>
+                    </dl>
+                    <p id="chk-short" class="sc-note d-none">Sessions under 5 minutes are too short for the injury check, so it will be skipped.</p>
+
+                    <p class="form-label mb-1" id="recovery-label">How recovered did you feel before this ride?</p>
+                    <div class="sc-choice mb-3" role="radiogroup" aria-labelledby="recovery-label">
+                        {% for val, text in ((20, 'Exhausted'), (40, 'Tired'), (60, 'OK'), (80, 'Good'), (100, 'Fresh')) %}
+                        <input type="radio" class="btn-check" name="recovery_score" id="rec-{{ val }}" value="{{ val }}"
+                               {% if v.get('recovery_score', '')|string == val|string %}checked{% endif %} required>
+                        <label class="sc-choice__opt" for="rec-{{ val }}">{{ text }}</label>
+                        {% endfor %}
+                    </div>
+
+                    <p class="form-label mb-1" id="sleep-label">How did you sleep last night?</p>
+                    <div class="sc-choice mb-3" role="radiogroup" aria-labelledby="sleep-label">
+                        {% for val, text in ((3, 'Poor'), (5, 'Fair'), (7, 'Good'), (9, 'Great')) %}
+                        <input type="radio" class="btn-check" name="sleep_quality" id="sleep-{{ val }}" value="{{ val }}"
+                               {% if v.get('sleep_quality', '')|string in (val|string, val|string ~ '.0') %}checked{% endif %} required>
+                        <label class="sc-choice__opt" for="sleep-{{ val }}">{{ text }}</label>
+                        {% endfor %}
+                    </div>
+
+                    <label for="heart_rate" class="form-label">Average heart rate <span class="text-secondary fw-normal">(optional, bpm)</span></label>
+                    <input type="number" id="heart_rate" name="heart_rate" min="30" max="220" class="form-control w-auto mb-4"
+                           value="{{ v.get('heart_rate', '') }}">
+
+                    <div>
+                        <button type="button" class="btn btn-outline-secondary" data-go-tab="#tab-workout-btn">Back to workout</button>
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
 
@@ -110,11 +148,9 @@
                 <h2 class="sc-h2">Session summary</h2>
                 <dl class="sc-dl mb-3">
                     <dt>Average speed</dt><dd id="sum-speed">&ndash;</dd>
-                    <dt>Estimated load (TSS)</dt><dd id="sum-tss">&ndash;</dd>
                     <dt>Intensity</dt><dd id="sum-intensity">&ndash;</dd>
                     {% if planned %}<dt>Planned</dt><dd id="sum-plan" data-minutes="{{ planned.minutes }}" data-km="{{ planned.km }}">&ndash;</dd>{% endif %}
                 </dl>
-                <p class="sc-note mt-0">Load is estimated from duration and effort, so it updates as you fill in the form.</p>
                 <div class="d-grid gap-2">
                     <button type="submit" class="btn btn-primary">{{ submit_label }}</button>
                     <a href="{{ url_for('plans.view_plan', plan_id=planned.plan_id) if planned else url_for('workouts.list_workouts') }}"

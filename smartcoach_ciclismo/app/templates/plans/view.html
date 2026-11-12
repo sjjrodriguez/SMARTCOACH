@@ -138,8 +138,8 @@
 
         <details class="sc-note mt-3">
             <summary>How are plan changes decided?</summary>
-            <p class="mt-2 mb-1"><strong>Moving up</strong> needs at least 14 days and 4 logged rides, at least 85% of planned rides and 95% of planned time completed, low fatigue (about 4.5/10 or less) and a healthy latest check-in.</p>
-            <p class="mb-1"><strong>Moving down</strong> is considered after 7 days and 3 rides if your fatigue after rides averages 7/10 or more, or your check-ins show very high fatigue or very low recovery.</p>
+            <p class="mt-2 mb-1"><strong>Moving up</strong> needs at least 14 days and 4 logged rides, at least 85% of planned rides and 95% of planned time completed, low fatigue (about 4.5/10 or less) and a healthy latest injury check.</p>
+            <p class="mb-1"><strong>Moving down</strong> is considered after 7 days and 3 rides if your fatigue after rides averages 7/10 or more, or your injury checks show very high fatigue or very low recovery.</p>
             <p class="mb-0">Your plan never changes on its own: you decide whether to accept a suggestion, and each change starts a new 4-week cycle.</p>
         </details>
     </div>
@@ -159,7 +159,7 @@
                     <h2 class="sc-h2">Back off if you notice</h2>
                     <ul class="sc-list">{% for r in g.warning_signs %}<li>{{ r }}</li>{% endfor %}</ul>
                     <p class="mb-2">{{ g.warning_action }}</p>
-                    <a href="{{ url_for('injury.checkin') }}" class="btn btn-sm btn-primary">Log an injury check-in</a>
+                    <a href="{{ url_for('workouts.create_workout') }}" class="btn btn-sm btn-primary">Log a workout and injury check</a>
                 </section>
             </div>
         </div>

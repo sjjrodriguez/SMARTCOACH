@@ -5,6 +5,7 @@ from flask_login import current_user, login_required
 
 from app.models.workout import Workout
 from app.services.dashboard_service import build_dashboard_data
+from app.services.methodology_service import build_methodology_data
 from app.services.routine_service import find_day
 
 main_bp = Blueprint('main', __name__)
@@ -28,6 +29,12 @@ def dashboard():
                 .all())
     return render_template('dashboard/index.html', data=build_dashboard_data(workouts),
                            today_plan=_today_session())
+
+
+@main_bp.route('/methodology')
+def methodology():
+    """Public page: CRISP-DM / CRISP-ML(Q) phases and the 4-layer architecture."""
+    return render_template('about/methodology.html', data=build_methodology_data())
 
 
 def _today_session():

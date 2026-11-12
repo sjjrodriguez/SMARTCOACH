@@ -27,7 +27,6 @@
                     <th scope="col">Elevation</th>
                     <th scope="col">RPE</th>
                     <th scope="col">Fatigue</th>
-                    <th scope="col">Load (TSS)</th>
                     <th scope="col">Notes</th>
                     <th scope="col"><span class="visually-hidden">Actions</span></th>
                 </tr>
@@ -41,7 +40,6 @@
                     <td>{{ '%.0f'|format(w.elevation_gain_m or 0) }} m</td>
                     <td>{{ w.rpe }}/10</td>
                     <td>{{ w.perceived_fatigue if w.perceived_fatigue is not none else '-' }}/10</td>
-                    <td>{{ '%.0f'|format(w.estimated_tss) if w.estimated_tss is not none else '-' }}</td>
                     <td class="sc-notes-cell">{{ w.notes or '' }}</td>
                     <td class="text-nowrap text-end">
                         <a class="btn btn-sm btn-outline-secondary"
@@ -60,7 +58,6 @@
 </div>
 <p class="sc-note">
     RPE is your rate of perceived exertion (1 = very easy, 10 = maximal effort).
-    Load is an estimated Training Stress Score (TSS) based on duration and RPE.
 </p>
 {% else %}
 <section class="sc-panel text-center py-5">

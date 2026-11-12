@@ -13,6 +13,8 @@ class Workout(db.Model):
     elevation_gain_m = db.Column(db.Float, nullable=True, default=0.0)
     rpe = db.Column(db.Integer, nullable=False)
     perceived_fatigue = db.Column(db.Integer, nullable=True, default=1)
+    # DEPRECATED: the estimated TSS is no longer calculated or shown. The column is kept
+    # only so existing databases (Supabase) keep working; it is safe to ignore.
     estimated_tss = db.Column(db.Float, nullable=True)
     notes = db.Column(db.Text, nullable=True)
 

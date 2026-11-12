@@ -31,6 +31,11 @@
                        {% if ep.startswith('injury.') %}aria-current="page"{% endif %}
                        href="{{ url_for('injury.index') }}">Injury Tracking</a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if ep == 'main.methodology' %}active{% endif %}"
+                       {% if ep == 'main.methodology' %}aria-current="page"{% endif %}
+                       href="{{ url_for('main.methodology') }}">Methodology</a>
+                </li>
             </ul>
             <div class="navbar-nav align-items-lg-center">
                 <span class="navbar-text text-white me-lg-3">Hello, {{ current_user.full_name }}</span>
@@ -41,6 +46,7 @@
             {% else %}
             <div class="navbar-nav ms-auto">
                 <a class="nav-link {% if ep == 'auth.login' %}active{% endif %}" href="{{ url_for('auth.login') }}">Sign In</a>
+                <a class="nav-link {% if ep == 'main.methodology' %}active{% endif %}" href="{{ url_for('main.methodology') }}">Methodology</a>
                 <a class="nav-link {% if ep == 'auth.register' %}active{% endif %}" href="{{ url_for('auth.register') }}">Sign Up</a>
             </div>
             {% endif %}

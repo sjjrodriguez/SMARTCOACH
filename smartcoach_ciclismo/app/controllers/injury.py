@@ -1,11 +1,11 @@
 from datetime import date, timedelta
-from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
+from flask import Blueprint, render_template, request, flash, abort
 from flask_login import login_required, current_user
 from app import db
 from app.models.injury import InjuryCheckin
 from app.models.plan import TrainingPlan
 from app.services.injury_service import (
-    injury_predictor, parse_checkin, ValidationError, RISK_TEXT, LEVEL_CSS)
+    injury_predictor, ValidationError, RISK_TEXT, LEVEL_CSS)
 from app.services.injury_cyclist_service import parse_profile, predict_injury
 
 injury_bp = Blueprint('injury', __name__, url_prefix='/injury')
@@ -25,31 +25,6 @@ def index():
     }
     return render_template('injury/index.html', checkins=checkins, chart=chart,
                            risk_text=RISK_TEXT, level_css=LEVEL_CSS)
-
-
-@injury_bp.route('/checkin', methods=['GET', 'POST'])
-@login_required
-def checkin():
-    if request.method == 'GET':
-        return render_template('injury/checkin.html', values={})
-
-    try:
-        data = parse_checkin(request.form)
-        level, probs = injury_predictor.predict(data)
-    except ValidationError as e:
-        flash(str(e), 'danger')
-        return render_template('injury/checkin.html', values=request.form), 400
-    except Exception as e:
-        flash(f'Could not calculate the risk: {e}', 'danger')
-        return render_template('injury/checkin.html', values=request.form), 500
-
-    record = InjuryCheckin(
-        user_id=current_user.id, date=date.today(), risk_level=level,
-        prob_low=probs.get('Low'), prob_medium=probs.get('Medium'), prob_high=probs.get('High'),
-        **data)
-    db.session.add(record)
-    db.session.commit()
-    return redirect(url_for('injury.result', checkin_id=record.id))
 
 
 @injury_bp.route('/profile', methods=['GET', 'POST'])

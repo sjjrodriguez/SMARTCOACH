@@ -1,4 +1,5 @@
-// Workout form: RPE picker, fatigue slider, quick-fill chips, note tags and a live summary.
+// Workout form: RPE picker, fatigue slider, quick-fill chips, note tags, a live summary and the
+// two tabs (Workout / Injury check). The injury check reuses effort, duration and fatigue from tab 1.
 (function () {
     "use strict";
 
@@ -50,8 +51,6 @@
         const hasTime = min > 0;
 
         $("sum-speed").textContent = hasTime && km > 0 ? (km / (min / 60)).toFixed(1) + " km/h" : "\u2013";
-        // Same formula as the server (workouts.py): duration x RPE x 1.1 / 10.
-        $("sum-tss").textContent = hasTime && rpe ? Math.round((min * rpe * 1.1) / 10) : "\u2013";
         $("sum-intensity").textContent = rpe ? intensityLabel(rpe) : "\u2013";
 
         const plan = $("sum-plan");
@@ -62,6 +61,14 @@
             if (hasTime) parts.push((min >= pm ? "+" : "") + Math.round(min - pm) + " min");
             if (km > 0) parts.push((km >= pk ? "+" : "") + (km - pk).toFixed(1) + " km");
             plan.textContent = parts.length ? parts.join(", ") + " vs plan" : "\u2013";
+        }
+
+        // "Injury check" tab: values taken automatically from the workout tab.
+        if ($("chk-rpe")) {
+            $("chk-rpe").textContent = rpe ? rpe + "/10 (" + intensityLabel(rpe).toLowerCase() + ")" : "Fill in the workout tab";
+            $("chk-duration").textContent = hasTime ? min + " min" : "Fill in the workout tab";
+            $("chk-fatigue").textContent = f + "/10 (" + FATIGUE_TEXT[f] + ")";
+            $("chk-short").classList.toggle("d-none", !(hasTime && min < 5));
         }
 
         $("notes-count").textContent = notes.value.length;
@@ -96,6 +103,30 @@
         notes.value = notes.value.slice(0, Number(notes.maxLength) || 500);
         update();
     });
+
+    // Tabs: "Next" / "Back" buttons switch tabs.
+    form.querySelectorAll("[data-go-tab]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            const target = document.querySelector(btn.dataset.goTab);
+            if (target && window.bootstrap) window.bootstrap.Tab.getOrCreateInstance(target).show();
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+    });
+
+    // A required field can sit in the tab that is not visible, and the browser cannot show its
+    // message there. Before submitting, open the tab of the first invalid field, then report it.
+    const submitBtn = form.querySelector("button[type=submit]");
+    if (submitBtn && form.querySelector(".tab-pane")) {
+        submitBtn.addEventListener("click", function (e) {
+            if (form.checkValidity()) return;
+            e.preventDefault();
+            const bad = form.querySelector(":invalid");
+            const pane = bad && bad.closest(".tab-pane");
+            const tabBtn = pane && document.querySelector('[data-bs-target="#' + pane.id + '"]');
+            if (tabBtn && window.bootstrap) window.bootstrap.Tab.getOrCreateInstance(tabBtn).show();
+            form.reportValidity();
+        });
+    }
 
     form.addEventListener("input", update);
     form.addEventListener("change", update);
