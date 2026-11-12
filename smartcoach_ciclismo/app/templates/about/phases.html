@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Phases - SmartCoach{% endblock %}
+{% block content %}
+
+<header class="sc-method-hero">
+    <p class="sc-eyebrow mb-2">Project documentation &middot; Step 1 of 3</p>
+    <h1 class="sc-h1 mb-2">CRISP-DM / CRISP-ML(Q) phases</h1>
+    <p>How the machine learning models of SmartCoach were built, phase by phase.</p>
+</header>
+
+<section class="sc-section" id="phases" aria-labelledby="phases-title">
+    <h2 class="sc-h2" id="phases-title">CRISP-DM / CRISP-ML(Q) phases</h2>
+    <p class="sc-lead">CRISP-DM has six phases. CRISP-ML(Q) keeps them, adds a quality check to each one and
+        a seventh phase for monitoring and maintenance, because models lose accuracy over time.</p>
+    <div class="row g-3">
+        {% for p in data.phases %}
+        <div class="col-md-6 col-xl-4">
+            <article class="sc-panel sc-phase {% if p.ml_q %}sc-phase--mlq{% endif %}">
+                <div class="sc-phase__head">
+                    <span class="sc-phase__num" aria-hidden="true">{{ p.n }}</span>
+                    <h3>{{ p.name }}</h3>
+                    <span class="sc-badge {% if p.status == 'done' %}sc-badge--done{% elif p.status == 'partial' %}sc-badge--partial{% endif %}">{{ data.status_label[p.status] }}</span>
+                </div>
+                <ul>{% for item in p.did %}<li>{{ item }}</li>{% endfor %}</ul>
+                <p class="sc-phase__qa mb-0"><strong>Quality check:</strong> {{ p.qa }}</p>
+            </article>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+
+<div class="d-flex justify-content-between mt-2 mb-4"><span></span><a class="btn btn-primary" href="{{ url_for('main.architecture') }}">Next: Architecture &rarr;</a></div>
+{% endblock %}

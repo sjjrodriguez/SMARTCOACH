@@ -1,45 +1,14 @@
 {% extends "base.html" %}
-{% block title %}Methodology - SmartCoach{% endblock %}
+{% block title %}Project document - SmartCoach{% endblock %}
 {% block content %}
 {% set inj = data.injury %}
 {% set prof = data.profile %}
-
 <header class="sc-method-hero">
-    <p class="sc-eyebrow mb-2">Project documentation</p>
-    <h1 class="sc-h1 mb-2">Methodology and architecture</h1>
-    <p>How SmartCoach was built: the CRISP-DM / CRISP-ML(Q) phases behind its machine learning models,
-       and the 4-layer software architecture of the web application.</p>
-    <nav class="sc-method-nav" aria-label="On this page">
-        <a href="#phases">CRISP-DM / CRISP-ML(Q)</a>
-        <a href="#models">Models</a>
-        <a href="#evaluation">Evaluation</a>
-        <a href="#architecture">4-layer architecture</a>
-    </nav>
+    <p class="sc-eyebrow mb-2">Project documentation &middot; Step 3 of 3</p>
+    <h1 class="sc-h1 mb-2">Project document</h1>
+    <p>Summary of the three models, how they were evaluated and the changes made in this iteration.</p>
 </header>
 
-{# ---------- Phases ---------- #}
-<section class="sc-section" id="phases" aria-labelledby="phases-title">
-    <h2 class="sc-h2" id="phases-title">CRISP-DM / CRISP-ML(Q) phases</h2>
-    <p class="sc-lead">CRISP-DM has six phases. CRISP-ML(Q) keeps them, adds a quality check to each one and
-        a seventh phase for monitoring and maintenance, because models lose accuracy over time.</p>
-    <div class="row g-3">
-        {% for p in data.phases %}
-        <div class="col-md-6 col-xl-4">
-            <article class="sc-panel sc-phase {% if p.ml_q %}sc-phase--mlq{% endif %}">
-                <div class="sc-phase__head">
-                    <span class="sc-phase__num" aria-hidden="true">{{ p.n }}</span>
-                    <h3>{{ p.name }}</h3>
-                    <span class="sc-badge {% if p.status == 'done' %}sc-badge--done{% elif p.status == 'partial' %}sc-badge--partial{% endif %}">{{ data.status_label[p.status] }}</span>
-                </div>
-                <ul>{% for item in p.did %}<li>{{ item }}</li>{% endfor %}</ul>
-                <p class="sc-phase__qa mb-0"><strong>Quality check:</strong> {{ p.qa }}</p>
-            </article>
-        </div>
-        {% endfor %}
-    </div>
-</section>
-
-{# ---------- Models ---------- #}
 <section class="sc-section" id="models" aria-labelledby="models-title">
     <h2 class="sc-h2" id="models-title">The three models</h2>
     <div class="card">
@@ -66,7 +35,7 @@
     </div>
 </section>
 
-{# ---------- Evaluation ---------- #}
+
 <section class="sc-section" id="evaluation" aria-labelledby="eval-title">
     <h2 class="sc-h2" id="eval-title">Evaluation</h2>
     <div class="row g-3">
@@ -118,30 +87,24 @@
     </div>
 </section>
 
-{# ---------- Architecture ---------- #}
-<section class="sc-section" id="architecture" aria-labelledby="arch-title">
-    <h2 class="sc-h2" id="arch-title">4-layer architecture</h2>
-    <p class="sc-lead">Each layer only uses the layer below it. Templates never talk to the database.</p>
-    <div class="sc-stack">
-        {% for l in data.layers %}
-        <article class="sc-layer sc-layer--{{ l.color }}">
-            <span class="sc-layer__num" aria-hidden="true">{{ l.n }}</span>
-            <div>
-                <h3>{{ l.name }}</h3>
-                <div>{{ l.does }} <code>{{ l.where }}</code></div>
-                <div class="sc-layer__meta"><strong>Technology:</strong> {{ l.tech }}<br>
-                    <strong>Example:</strong> {{ l.example }}</div>
-            </div>
-        </article>
-        {% if not loop.last %}<div class="sc-layer__arrow" aria-hidden="true">&darr;</div>{% endif %}
-        {% endfor %}
-    </div>
 
-    <h3 class="sc-h2 mt-4">Example: logging a workout</h3>
-    <ol class="sc-flow">
-        {% for name, text in data.flow %}
-        <li><strong>{{ name }}</strong>{{ text }}</li>
-        {% endfor %}
-    </ol>
+<section class="sc-section" id="changes" aria-labelledby="changes-title">
+    <h2 class="sc-h2" id="changes-title">Changes in this iteration</h2>
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead><tr><th scope="col">Requirement</th><th scope="col">What was done</th></tr></thead>
+                <tbody>
+                    <tr><td>Remove the Daily injury check-in page</td><td>Route, template and every link to it were removed; those buttons now lead to Log workout.</td></tr>
+                    <tr><td>Remove the estimated TSS</td><td>Removed from the form, summary, list, server calculation and dashboard text. Load is always RPE &times; minutes.</td></tr>
+                    <tr><td>Workout form in 2 tabs</td><td>1. Workout and 2. Injury check. Editing a workout keeps a single tab.</td></tr>
+                    <tr><td>Injury check filled in from the workout</td><td>RPE, duration and fatigue come from the workout; the check is created automatically on save.</td></tr>
+                    <tr><td>Documentation in the top bar</td><td>Phases, Architecture and Project document are separate pages, reachable from the navigation bar.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </section>
+
+<div class="d-flex justify-content-between mt-2 mb-4"><a class="btn btn-outline-secondary" href="{{ url_for('main.architecture') }}">&larr; Architecture</a></div>
 {% endblock %}

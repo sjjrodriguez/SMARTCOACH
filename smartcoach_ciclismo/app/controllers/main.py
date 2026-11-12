@@ -31,10 +31,22 @@ def dashboard():
                            today_plan=_today_session())
 
 
-@main_bp.route('/methodology')
-def methodology():
-    """Public page: CRISP-DM / CRISP-ML(Q) phases and the 4-layer architecture."""
-    return render_template('about/methodology.html', data=build_methodology_data())
+@main_bp.route('/phases')
+def phases():
+    """Public page 1 of 3: CRISP-DM / CRISP-ML(Q) phases."""
+    return render_template('about/phases.html', data=build_methodology_data())
+
+
+@main_bp.route('/architecture')
+def architecture():
+    """Public page 2 of 3: the 4-layer architecture."""
+    return render_template('about/architecture.html', data=build_methodology_data())
+
+
+@main_bp.route('/project-document')
+def project_document():
+    """Public page 3 of 3: models, evaluation and changes."""
+    return render_template('about/project_document.html', data=build_methodology_data())
 
 
 def _today_session():

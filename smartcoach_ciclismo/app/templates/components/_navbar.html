@@ -32,9 +32,19 @@
                        href="{{ url_for('injury.index') }}">Injury Tracking</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {% if ep == 'main.methodology' %}active{% endif %}"
-                       {% if ep == 'main.methodology' %}aria-current="page"{% endif %}
-                       href="{{ url_for('main.methodology') }}">Methodology</a>
+                    <a class="nav-link {% if ep == 'main.phases' %}active{% endif %}"
+                       {% if ep == 'main.phases' %}aria-current="page"{% endif %}
+                       href="{{ url_for('main.phases') }}">Phases</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if ep == 'main.architecture' %}active{% endif %}"
+                       {% if ep == 'main.architecture' %}aria-current="page"{% endif %}
+                       href="{{ url_for('main.architecture') }}">Architecture</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if ep == 'main.project_document' %}active{% endif %}"
+                       {% if ep == 'main.project_document' %}aria-current="page"{% endif %}
+                       href="{{ url_for('main.project_document') }}">Project document</a>
                 </li>
             </ul>
             <div class="navbar-nav align-items-lg-center">
@@ -46,7 +56,9 @@
             {% else %}
             <div class="navbar-nav ms-auto">
                 <a class="nav-link {% if ep == 'auth.login' %}active{% endif %}" href="{{ url_for('auth.login') }}">Sign In</a>
-                <a class="nav-link {% if ep == 'main.methodology' %}active{% endif %}" href="{{ url_for('main.methodology') }}">Methodology</a>
+                <a class="nav-link {% if ep == 'main.phases' %}active{% endif %}" href="{{ url_for('main.phases') }}">Phases</a>
+                <a class="nav-link {% if ep == 'main.architecture' %}active{% endif %}" href="{{ url_for('main.architecture') }}">Architecture</a>
+                <a class="nav-link {% if ep == 'main.project_document' %}active{% endif %}" href="{{ url_for('main.project_document') }}">Project document</a>
                 <a class="nav-link {% if ep == 'auth.register' %}active{% endif %}" href="{{ url_for('auth.register') }}">Sign Up</a>
             </div>
             {% endif %}
