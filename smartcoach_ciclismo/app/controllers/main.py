@@ -1,9 +1,10 @@
 from datetime import date, timedelta
 
-from flask import Blueprint, redirect, render_template, url_for
+from flask import Blueprint, abort, redirect, render_template, url_for
 from flask_login import current_user, login_required
 
 from app.models.workout import Workout
+from app.services.crisp_content import PHASE_PAGES, STATUS_LABEL, class_distribution, get_phase, phase_menu
 from app.services.dashboard_service import build_dashboard_data
 from app.services.methodology_service import build_methodology_data
 from app.services.routine_service import find_day
@@ -11,10 +12,17 @@ from app.services.routine_service import find_day
 main_bp = Blueprint('main', __name__)
 
 
+def _docs(**extra):
+    """Context shared by the documentation pages (they use their own top bar)."""
+    ctx = {'docs_mode': True, 'crisp_menu': phase_menu()}
+    ctx.update(extra)
+    return ctx
+
+
 @main_bp.route('/')
 def index():
-    """The documentation comes first; the application is reached with the "Open SmartCoach" button."""
-    return redirect(url_for('main.phases'))
+    """The documentation comes first: the site opens on phase 1. The application is reached with "Open SmartCoach"."""
+    return redirect(url_for('main.crisp_phase', slug=PHASE_PAGES[0]['slug']))
 
 
 @main_bp.route('/dashboard')
@@ -32,20 +40,31 @@ def dashboard():
 
 @main_bp.route('/phases')
 def phases():
-    """Public page 1 of 3: CRISP-DM / CRISP-ML(Q) phases."""
-    return render_template('about/phases.html', data=build_methodology_data(), docs_mode=True)
+    """Old address of the phases page; the phases now live in the CRISP-DM menu."""
+    return redirect(url_for('main.index'))
+
+
+@main_bp.route('/crisp-dm/<slug>')
+def crisp_phase(slug):
+    """One page per CRISP-DM / CRISP-ML(Q) phase."""
+    phase, prev_phase, next_phase = get_phase(slug)
+    if phase is None:
+        abort(404)
+    return render_template('about/phase.html', **_docs(
+        phase=phase, prev_phase=prev_phase, next_phase=next_phase,
+        status_label=STATUS_LABEL, data=build_methodology_data(), class_dist=class_distribution()))
 
 
 @main_bp.route('/architecture')
 def architecture():
-    """Public page 2 of 3: the 4-layer architecture."""
-    return render_template('about/architecture.html', data=build_methodology_data(), docs_mode=True)
+    """The 4-layer architecture."""
+    return render_template('about/architecture.html', **_docs(data=build_methodology_data()))
 
 
 @main_bp.route('/project-document')
 def project_document():
-    """Public page 3 of 3: models, evaluation and changes."""
-    return render_template('about/project_document.html', data=build_methodology_data(), docs_mode=True)
+    """Models, evaluation and the changes of this iteration."""
+    return render_template('about/project_document.html', **_docs(data=build_methodology_data()))
 
 
 def _today_session():

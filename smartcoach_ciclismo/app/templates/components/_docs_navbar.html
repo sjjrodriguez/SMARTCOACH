@@ -1,4 +1,5 @@
 {# Top bar of the documentation section (shown before the application) #}
+{% set slug_now = (request.view_args or {}).get('slug') %}
 <nav class="navbar navbar-expand-lg navbar-dark sc-navbar">
     <div class="container">
         <a class="navbar-brand" href="{{ url_for('main.index') }}">SmartCoach <span class="sc-docs-tag">Documentation</span></a>
@@ -9,7 +10,15 @@
         </button>
         <div class="collapse navbar-collapse" id="scDocsNavbar">
             <div class="navbar-nav ms-auto align-items-lg-center">
-                <a class="nav-link {% if ep == 'main.phases' %}active{% endif %}" {% if ep == 'main.phases' %}aria-current="page"{% endif %} href="{{ url_for('main.phases') }}">Phases</a>
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle {% if ep == 'main.crisp_phase' %}active{% endif %}" href="#" role="button"
+                       data-bs-toggle="dropdown" aria-expanded="false">CRISP-DM</a>
+                    <ul class="dropdown-menu dropdown-menu-dark">
+                        {% for p in crisp_menu %}
+                        <li><a class="dropdown-item {% if slug_now == p.slug %}active{% endif %}" href="{{ url_for('main.crisp_phase', slug=p.slug) }}">{{ p.n }}. {{ p.name }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
                 <a class="nav-link {% if ep == 'main.architecture' %}active{% endif %}" {% if ep == 'main.architecture' %}aria-current="page"{% endif %} href="{{ url_for('main.architecture') }}">Architecture</a>
                 <a class="nav-link {% if ep == 'main.project_document' %}active{% endif %}" {% if ep == 'main.project_document' %}aria-current="page"{% endif %} href="{{ url_for('main.project_document') }}">Project document</a>
                 <a class="btn btn-primary btn-sm ms-lg-3 mt-2 mt-lg-0" href="{{ url_for('main.dashboard') }}">Open SmartCoach</a>

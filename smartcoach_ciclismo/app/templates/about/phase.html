@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+{% block title %}{{ phase.n }}. {{ phase.name }} - SmartCoach{% endblock %}
+{% block content %}
+{% set inj = data.injury %}
+{% set prof = data.profile %}
+{% set badge = 'sc-badge--done' if phase.status == 'done' else ('sc-badge--partial' if phase.status == 'partial' else '') %}
+
+<header class="sc-cr-hero">
+    <p class="sc-eyebrow mb-3">CRISP-DM &middot; Phase {{ phase.n }} of {{ crisp_menu|length }}
+        <span class="sc-badge ms-2 {{ badge }}">{{ status_label[phase.status] }}</span></p>
+    <div class="sc-cr-hero__title">
+        <span class="sc-cr-hero__num" aria-hidden="true">{{ phase.n }}</span>
+        <div>
+            <h1 class="sc-h1 mb-2">{{ phase.name }}</h1>
+            <p class="sc-cr-hero__what">{{ phase.what }}</p>
+        </div>
+    </div>
+    <dl class="sc-cr-glance">
+        {% if phase.glance %}
+            {% for value, label in phase.glance %}<div><dd>{{ value }}</dd><dt>{{ label }}</dt></div>{% endfor %}
+        {% elif inj %}
+            <div><dd>{{ '%.2f'|format(inj.macro_f1) if inj.macro_f1 is not none else 'n/a' }}</dd><dt>macro-F1 of the injury model</dt></div>
+            <div><dd>{{ '%.2f'|format(inj.accuracy) if inj.accuracy is not none else 'n/a' }}</dd><dt>accuracy</dt></div>
+            <div><dd>{{ '%.2f'|format(inj.baseline) if inj.baseline is not none else 'n/a' }}</dd><dt>baseline: most common class</dt></div>
+            <div><dd>{{ (inj.high_recall * 100)|round|int ~ '%' if inj.high_recall is not none else 'n/a' }}</dd><dt>of high-risk cases found</dt></div>
+        {% endif %}
+    </dl>
+    <a class="btn btn-primary" href="{{ url_for('main.dashboard') }}">Open SmartCoach &rarr;</a>
+</header>
+
+<nav class="sc-cr-steps" aria-label="CRISP-DM phases">
+    {% for p in crisp_menu %}
+    <a href="{{ url_for('main.crisp_phase', slug=p.slug) }}" class="{% if p.slug == phase.slug %}active{% endif %}"
+       {% if p.slug == phase.slug %}aria-current="page"{% endif %}>
+        <span class="n">{{ p.n }}</span><span class="l">{{ p.name }}</span></a>
+    {% endfor %}
+</nav>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        {% for b in phase.blocks %}
+        <section class="sc-cr-sec" id="s{{ loop.index }}">
+            {% if b.h %}<h2 class="sc-cr-h"><span class="sc-cr-bar" aria-hidden="true"></span>{{ b.h }}</h2>{% endif %}
+            {% if b.lead %}<p class="sc-cr-lead">{{ b.lead }}</p>{% endif %}
+
+            {% if b.p %}{% for para in (b.p if b.p is not string else [b.p]) %}<p>{{ para }}</p>{% endfor %}{% endif %}
+            {% if b.ul %}<ul class="sc-cr-list">{% for item in b.ul %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}
+            {% if b.ol %}<ol class="sc-cr-list">{% for item in b.ol %}<li>{{ item }}</li>{% endfor %}</ol>{% endif %}
+
+            {% if b.table %}
+            <div class="sc-cr-table table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead><tr>{% for h in b.table.head %}<th scope="col">{{ h }}</th>{% endfor %}</tr></thead>
+                    <tbody>{% for row in b.table.rows %}<tr>{% for cell in row %}{% if loop.first %}<th scope="row">{{ cell }}</th>{% else %}<td>{{ cell }}</td>{% endif %}{% endfor %}</tr>{% endfor %}</tbody>
+                </table>
+            </div>
+            {% endif %}
+
+            {% if b.cards %}
+            <div class="sc-cr-cards">
+                {% for c in b.cards %}
+                <article class="sc-cr-card {% if c.tone %}sc-cr-card--{{ c.tone }}{% endif %}">
+                    {% if c.tag %}<span class="sc-cr-tag">{{ c.tag }}</span>{% endif %}
+                    <h3>{{ c.t }}</h3>
+                    <p>{{ c.x }}</p>
+                </article>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if b.flow %}
+            <ol class="sc-cr-flow">
+                {% for s in b.flow %}
+                <li class="{% if s.status %}sc-cr-flow--{{ s.status }}{% endif %}">
+                    <span class="sc-cr-flow__n">{% if s.status == 'done' %}&#10003;{% else %}{{ loop.index }}{% endif %}</span>
+                    <div><h3>{{ s.t }}{% if s.status == 'done' %} <span class="sc-badge sc-badge--done">In place</span>{% elif s.status == 'next' %} <span class="sc-badge">Planned</span>{% endif %}</h3>
+                        <p>{{ s.x }}</p></div>
+                </li>
+                {% endfor %}
+            </ol>
+            {% endif %}
+
+            {% if b.callout %}
+            <div class="sc-cr-callout sc-cr-callout--{{ b.callout.tone }}">
+                <strong>{{ b.callout.t }}</strong>
+                <p>{{ b.callout.x }}</p>
+            </div>
+            {% endif %}
+
+            {% if b.special == 'class_dist' %}
+            <ul class="sc-bars sc-cr-panel">
+                {% for c in class_dist %}
+                <li><span>{{ c.label }}</span>
+                    <div class="progress" role="progressbar" aria-label="{{ c.label }} examples" aria-valuenow="{{ c.width }}" aria-valuemin="0" aria-valuemax="100">
+                        <div class="progress-bar" style="width: {{ c.width }}%"></div></div>
+                    <span class="pct">{{ '{:,}'.format(c.n) }} ({{ c.pct }}%)</span></li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+
+            {% if b.special == 'algo_compare' %}
+                {% if data.algo_compare %}
+                <ul class="sc-bars sc-cr-panel">
+                    {% for a in data.algo_compare %}
+                    <li><span>{{ a.name }}</span>
+                        <div class="progress" role="progressbar" aria-label="{{ a.name }} macro-F1" aria-valuenow="{{ (a.score * 100)|round|int }}" aria-valuemin="0" aria-valuemax="100">
+                            <div class="progress-bar" style="width: {{ (a.score * 100)|round|int }}%"></div></div>
+                        <span class="pct">{{ '%.3f'|format(a.score) }}</span></li>
+                    {% endfor %}
+                </ul>
+                <p class="sc-note">Cross-validated macro-F1, earlier version of the injury model.</p>
+                {% endif %}
+            {% endif %}
+
+            {% if b.special == 'metrics' %}
+                {% if inj %}
+                <dl class="sc-tiles">
+                    <div class="sc-tile"><dt>Macro-F1</dt><dd>{{ '%.2f'|format(inj.macro_f1) if inj.macro_f1 is not none else 'n/a' }}</dd><small>main metric</small></div>
+                    <div class="sc-tile"><dt>Accuracy</dt><dd>{{ '%.2f'|format(inj.accuracy) if inj.accuracy is not none else 'n/a' }}</dd><small>test set</small></div>
+                    <div class="sc-tile"><dt>Baseline</dt><dd>{{ '%.2f'|format(inj.baseline) if inj.baseline is not none else 'n/a' }}</dd><small>always predict the most common class</small></div>
+                    <div class="sc-tile"><dt>High risk found</dt><dd>{{ (inj.high_recall * 100)|round|int ~ '%' if inj.high_recall is not none else 'n/a' }}</dd><small>of real high-risk cases</small></div>
+                </dl>
+                {% if inj.features %}
+                <h3 class="sc-cr-sub">What the model relies on most</h3>
+                <ul class="sc-bars sc-cr-panel">
+                    {% for f in inj.features %}
+                    <li><span>{{ f.label }}</span>
+                        <div class="progress" role="progressbar" aria-label="{{ f.label }} importance" aria-valuenow="{{ f.width }}" aria-valuemin="0" aria-valuemax="100">
+                            <div class="progress-bar" style="width: {{ f.width }}%"></div></div>
+                        <span class="pct">{{ f.pct }}%</span></li>
+                    {% endfor %}
+                </ul>
+                <p class="sc-note">This is why the workout form asks for recovery and sleep in the Injury check tab.</p>
+                {% endif %}
+                {% else %}
+                <p class="text-secondary">The metrics file is not available in this installation.</p>
+                {% endif %}
+            {% endif %}
+
+            {% if b.special == 'confusion' %}
+                {% if inj and inj.confusion %}
+                <div class="sc-cr-table table-responsive">
+                    <table class="table text-center align-middle mb-0 sc-cm">
+                        <thead><tr><th scope="col" class="text-start">Real level</th>{% for l in inj.confusion.labels %}<th scope="col">Predicted {{ l }}</th>{% endfor %}</tr></thead>
+                        <tbody>
+                        {% for row in inj.confusion.rows %}
+                        <tr><th scope="row" class="text-start">{{ row.label }} <small class="text-secondary">({{ row.total }})</small></th>
+                            {% for cell in row.cells %}
+                            <td style="background: rgba(13,110,253,{{ '%.2f'|format(cell.share * 0.85) }}); color: {{ '#fff' if cell.share > 0.6 else 'inherit' }}">
+                                <strong>{{ cell.n }}</strong><br><small>{{ (cell.share * 100)|round|int }}%</small></td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <p class="sc-note">The darker the cell, the larger the share of that real level. A strong diagonal means correct predictions.</p>
+                {% else %}
+                <p class="text-secondary">The confusion matrix is not available in this installation.</p>
+                {% endif %}
+            {% endif %}
+
+            {% if b.special == 'other_models' %}
+            <div class="sc-cr-cards">
+                <article class="sc-cr-card"><span class="sc-cr-tag">Model C</span><h3>Cyclist profile</h3>
+                    <p>{% if prof %}Accuracy {{ '%.2f'|format(prof.accuracy) }} and F1 {{ '%.2f'|format(prof.f1) }}.{% else %}Metrics not available.{% endif %}</p></article>
+                <article class="sc-cr-card sc-cr-card--warn"><span class="sc-cr-tag">Model A</span><h3>Plan classifier</h3>
+                    <p>No metrics are saved yet. It was trained on synthetic data.</p></article>
+            </div>
+            {% endif %}
+        </section>
+        {% endfor %}
+    </div>
+
+    <aside class="col-lg-4">
+        <div class="sc-cr-aside">
+            <div class="sc-cr-panel">
+                <h3 class="sc-cr-side-h">On this page</h3>
+                <ul class="sc-cr-toc">
+                    {% for b in phase.blocks %}{% if b.h %}<li><a href="#s{{ loop.index }}">{{ b.h }}</a></li>{% endif %}{% endfor %}
+                    <li><a href="#terms">Key terms</a></li>
+                </ul>
+            </div>
+            <div class="sc-cr-qa">
+                <h3 class="sc-cr-side-h">Quality check (CRISP-ML(Q))</h3>
+                <p class="mb-0">{{ phase.qa }}</p>
+            </div>
+            <div class="sc-cr-panel">
+                <h3 class="sc-cr-side-h">What this phase delivers</h3>
+                <ul class="sc-cr-check">{% for d in phase.delivers %}<li>{{ d }}</li>{% endfor %}</ul>
+            </div>
+            <div class="sc-cr-panel">
+                <h3 class="sc-cr-side-h">Where to find it</h3>
+                <ul class="sc-files mb-0">{% for f in phase.files %}<li><code>{{ f }}</code></li>{% endfor %}</ul>
+            </div>
+        </div>
+    </aside>
+</div>
+
+<section class="sc-cr-sec mt-4" id="terms">
+    <h2 class="sc-cr-h"><span class="sc-cr-bar" aria-hidden="true"></span>Key terms</h2>
+    <div class="sc-cr-cards sc-cr-cards--terms">
+        {% for term, meaning in phase.terms %}
+        <article class="sc-cr-card"><h3>{{ term }}</h3><p>{{ meaning }}</p></article>
+        {% endfor %}
+    </div>
+</section>
+
+<div class="d-flex justify-content-between gap-2 mt-4 mb-4">
+    {% if prev_phase %}
+    <a class="btn btn-outline-secondary" href="{{ url_for('main.crisp_phase', slug=prev_phase.slug) }}">&larr; {{ prev_phase.n }}. {{ prev_phase.name }}</a>
+    {% else %}
+    <span></span>
+    {% endif %}
+    {% if next_phase %}
+    <a class="btn btn-primary" href="{{ url_for('main.crisp_phase', slug=next_phase.slug) }}">Next: {{ next_phase.n }}. {{ next_phase.name }} &rarr;</a>
+    {% else %}
+    <a class="btn btn-primary" href="{{ url_for('main.architecture') }}">Next: Architecture &rarr;</a>
+    {% endif %}
+</div>
+{% endblock %}

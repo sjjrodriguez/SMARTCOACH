@@ -117,6 +117,7 @@ def _injury_metrics():
         out['high_recall'] = row[2] / sum(row)
     except (TypeError, IndexError, ZeroDivisionError):
         pass
+    out['confusion'] = _confusion_rows(cm)
     imp = m.get('feature_importances') or {}
     top = sorted(imp.items(), key=lambda kv: kv[1], reverse=True)[:5]
     if top:
@@ -124,6 +125,29 @@ def _injury_metrics():
         out['features'] = [{'label': FEATURE_LABELS.get(k, k), 'pct': round(v * 100, 1),
                             'width': round(v / biggest * 100)} for k, v in top]
     return out
+
+
+def _confusion_rows(cm, labels=('Low', 'Medium', 'High')):
+    """Rows of the confusion matrix with the share of each cell inside its real class (row)."""
+    try:
+        rows = []
+        for i, row in enumerate(cm):
+            total = sum(row) or 1
+            rows.append({'label': labels[i], 'total': sum(row),
+                         'cells': [{'n': n, 'share': n / total} for n in row]})
+        return {'labels': list(labels), 'rows': rows}
+    except (TypeError, IndexError):
+        return None
+
+
+def _algo_compare():
+    """Cross-validated macro-F1 of each algorithm in the earlier version of the injury model."""
+    m = _load_json('model_artifacts', 'metrics.json')
+    cv = (m or {}).get('cv_macro_f1')
+    if not isinstance(cv, dict):
+        return None
+    names = {'RandomForest': 'Random Forest', 'XGBoost': 'XGBoost'}
+    return [{'name': names.get(k, k), 'score': v} for k, v in cv.items()]
 
 
 def _profile_metrics():
@@ -137,5 +161,5 @@ def build_methodology_data():
     return {
         'phases': PHASES, 'status_label': STATUS_LABEL, 'models': MODELS,
         'layers': LAYERS, 'flow': FLOW,
-        'injury': _injury_metrics(), 'profile': _profile_metrics(),
+        'injury': _injury_metrics(), 'profile': _profile_metrics(), 'algo_compare': _algo_compare(),
     }
