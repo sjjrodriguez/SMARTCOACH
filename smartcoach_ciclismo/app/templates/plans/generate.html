@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Training Plan - SmartCoach{% endblock %}
+{% block content %}
+{% set v = values if values else {} %}
+<div class="row justify-content-center sc-action">
+    <div class="col-md-9 col-lg-7">
+        <div class="card">
+            <div class="card-body">
+                <h1 class="sc-h1 mb-2 text-center">Smart Training Plan Generator</h1>
+                <p class="sc-note mb-4 text-center">
+                    Enter your current data and we will build a 4-week plan with training, rest and nutrition.
+                </p>
+                <div class="alert alert-info" role="note">
+                    Your plan is generated <strong>once</strong>. From then on it only changes when your performance
+                    review suggests moving up or down a level.
+                </div>
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="birth_date" class="form-label">Date of birth <strong id="age-out" class="text-secondary fw-normal"></strong></label>
+                            <input type="date" id="birth_date" name="birth_date" class="form-control"
+                                   min="{{ min_birth }}" max="{{ max_birth }}"
+                                   value="{{ v.get('birth_date', '') }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="weight_kg" class="form-label">Weight (kg)</label>
+                            <input type="number" id="weight_kg" step="0.1" name="weight_kg" min="30" max="200" class="form-control"
+                                   value="{{ v.get('weight_kg', '') }}" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="weekly_hours" class="form-label">Hours per week: <strong id="hours-out"></strong></label>
+                            <input type="number" id="weekly_hours" step="0.5" name="weekly_hours" min="0.5" max="40" class="form-control"
+                                   value="{{ v.get('weekly_hours', '') }}" aria-describedby="hours-help" required>
+                            <div id="hours-help" class="form-text">Hours you can realistically train.</div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="resting_heart_rate" class="form-label">Resting heart rate (bpm)</label>
+                            <input type="number" id="resting_heart_rate" name="resting_heart_rate" min="30" max="120" class="form-control"
+                                   value="{{ v.get('resting_heart_rate', '') }}" aria-describedby="hr-help" required>
+                            <div id="hr-help" class="form-text">Measured when you wake up.</div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="tss_acumulado" class="form-label">Accumulated TSS</label>
+                            <input type="number" id="tss_acumulado" step="0.1" name="tss_acumulado" min="0" class="form-control"
+                                   value="{{ v.get('tss_acumulado', 0) }}" aria-describedby="tss-help" required>
+                            <div id="tss-help" class="form-text">Training Stress Score. Enter 0 if you don't track it.</div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg w-100">Generate my plan</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    (function () {
+        // Weekly hours as "5 h 30 min" and the age that comes from the date of birth.
+        var hours = document.getElementById("weekly_hours"), hoursOut = document.getElementById("hours-out");
+        var birth = document.getElementById("birth_date"), ageOut = document.getElementById("age-out");
+        function showHours() {
+            var v = parseFloat(hours.value);
+            if (!(v > 0)) { hoursOut.textContent = ""; return; }
+            var h = Math.floor(v), m = Math.round((v - h) * 60);
+            hoursOut.textContent = h + " h" + (m ? " " + m + " min" : "");
+        }
+        function showAge() {
+            var d = new Date(birth.value + "T00:00:00");
+            if (isNaN(d)) { ageOut.textContent = ""; return; }
+            var now = new Date(), age = now.getFullYear() - d.getFullYear();
+            if (now.getMonth() < d.getMonth() || (now.getMonth() === d.getMonth() && now.getDate() < d.getDate())) age--;
+            ageOut.textContent = age >= 0 ? "(" + age + " years old)" : "";
+        }
+        hours.addEventListener("input", showHours);
+        birth.addEventListener("input", showAge);
+        showHours(); showAge();
+    })();
+</script>
+{% endblock %}

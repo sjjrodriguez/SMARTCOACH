@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Architecture - SmartCoach{% endblock %}
+{% block content %}
+
+<header class="sc-method-hero">
+    <p class="sc-eyebrow mb-2">Project documentation &middot; Step 2 of 3</p>
+    <h1 class="sc-h1 mb-2">4-layer architecture</h1>
+    <p>How the web application is organized, from what the cyclist sees to where the data is stored.</p>
+    <a class="btn btn-primary mt-3" href="{{ url_for('main.dashboard') }}">Open SmartCoach &rarr;</a>
+</header>
+
+<section class="sc-section" id="architecture" aria-labelledby="arch-title">
+    <h2 class="sc-h2" id="arch-title">4-layer architecture</h2>
+    <p class="sc-lead">Each layer only uses the layer below it. Templates never talk to the database.</p>
+    <div class="sc-stack">
+        {% for l in data.layers %}
+        <article class="sc-layer sc-layer--{{ l.color }}">
+            <span class="sc-layer__num" aria-hidden="true">{{ l.n }}</span>
+            <div>
+                <h3>{{ l.name }}</h3>
+                <div>{{ l.does }} <code>{{ l.where }}</code></div>
+                <div class="sc-layer__meta"><strong>Technology:</strong> {{ l.tech }}<br>
+                    <strong>Example:</strong> {{ l.example }}</div>
+            </div>
+        </article>
+        {% if not loop.last %}<div class="sc-layer__arrow" aria-hidden="true">&darr;</div>{% endif %}
+        {% endfor %}
+    </div>
+
+    <h3 class="sc-h2 mt-4">Example: logging a workout</h3>
+    <ol class="sc-flow">
+        {% for name, text in data.flow %}
+        <li><strong>{{ name }}</strong>{{ text }}</li>
+        {% endfor %}
+    </ol>
+</section>
+
+<div class="d-flex justify-content-between mt-2 mb-4"><a class="btn btn-outline-secondary" href="{{ url_for('main.crisp_phase', slug='monitoring-maintenance') }}">&larr; 7. Monitoring and maintenance</a><a class="btn btn-primary" href="{{ url_for('main.project_document') }}">Next: Project document &rarr;</a></div>
+{% endblock %}

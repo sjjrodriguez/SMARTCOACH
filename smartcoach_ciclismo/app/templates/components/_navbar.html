@@ -1,0 +1,55 @@
+{% set ep = request.endpoint or '' %}
+{% if docs_mode %}
+{% include 'components/_docs_navbar.html' %}
+{% else %}
+<nav class="navbar navbar-expand-lg navbar-dark sc-navbar">
+    <div class="container">
+        <a class="navbar-brand" href="{{ url_for('main.dashboard' if current_user.is_authenticated else 'main.index') }}">SmartCoach</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#scNavbar" aria-controls="scNavbar"
+                aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="scNavbar">
+            {% if current_user.is_authenticated %}
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link {% if ep == 'main.dashboard' %}active{% endif %}"
+                       {% if ep == 'main.dashboard' %}aria-current="page"{% endif %}
+                       href="{{ url_for('main.dashboard') }}">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if ep.startswith('workouts.') %}active{% endif %}"
+                       {% if ep.startswith('workouts.') %}aria-current="page"{% endif %}
+                       href="{{ url_for('workouts.list_workouts') }}">Workouts</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if ep.startswith('plans.') %}active{% endif %}"
+                       {% if ep.startswith('plans.') %}aria-current="page"{% endif %}
+                       href="{{ url_for('plans.current_plan') }}">Training Plan</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if ep.startswith('injury.') %}active{% endif %}"
+                       {% if ep.startswith('injury.') %}aria-current="page"{% endif %}
+                       href="{{ url_for('injury.index') }}">Injury Tracking</a>
+                </li>
+            </ul>
+            <div class="navbar-nav align-items-lg-center">
+                <a class="nav-link" href="{{ url_for('main.index') }}">Documentation</a>
+                <span class="navbar-text text-white me-lg-3">Hello, {{ current_user.full_name }}</span>
+                <form method="POST" action="{{ url_for('auth.logout') }}" class="d-inline">
+                    <button type="submit" class="btn btn-outline-light btn-sm">Log out</button>
+                </form>
+            </div>
+            {% else %}
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('main.index') }}">Documentation</a>
+                <a class="nav-link {% if ep == 'auth.login' %}active{% endif %}" href="{{ url_for('auth.login') }}">Sign In</a>
+                <a class="nav-link {% if ep == 'auth.register' %}active{% endif %}" href="{{ url_for('auth.register') }}">Sign Up</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</nav>
+{% endif %}

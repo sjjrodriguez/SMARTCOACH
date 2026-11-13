@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Log Workout - SmartCoach{% endblock %}
+{% block content %}
+{% set v = values if values else {'date': today} %}
+<div class="row justify-content-center sc-action">
+    <div class="col-xl-10">
+        <div class="card">
+            <div class="card-body">
+                <h1 class="sc-h1 mb-1">Log a workout</h1>
+                {% if planned %}
+                <div class="sc-planned" role="status">
+                    <strong>{{ planned.title }}</strong> planned for {{ planned.label }}:
+                    {{ planned.minutes }} min, about {{ planned.km }} km, {{ planned.effort|lower }} effort (RPE {{ planned.rpe }}).
+                    The form is prefilled; change anything that went differently.
+                </div>
+                {% else %}
+                <p class="sc-note mb-4">Record a session in the first tab and answer the injury check in the second. You will see your injury risk as soon as you save.</p>
+                {% endif %}
+                {% set submit_label = 'Save and check injury risk' %}
+                {% set with_checkin = true %}
+                {% include 'workouts/_form.html' %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}<script src="{{ url_for('static', filename='js/workout_form.js') }}"></script>{% endblock %}

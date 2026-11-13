@@ -1,0 +1,80 @@
+{
+  "features": [
+    "age",
+    "bmi",
+    "training_intensity",
+    "training_duration",
+    "training_load",
+    "heart_rate",
+    "sleep_quality",
+    "recovery_score",
+    "fatigue_index"
+  ],
+  "feature_sources": {
+    "age": "cyclist age (profile)",
+    "bmi": "weight(kg) / height(m)^2 (profile)",
+    "training_intensity": "session rpe (1-10)",
+    "training_duration": "session duracion_min",
+    "training_load": "session load = rpe * duracion_min (sRPE)",
+    "heart_rate": "session frecuencia_cardiaca_media",
+    "sleep_quality": "daily check-in: sleep quality (2-10)",
+    "recovery_score": "daily check-in: perceived recovery (25-98)",
+    "fatigue_index": "daily check-in: fatigue (15-85)"
+  },
+  "classes": {
+    "0": "Low",
+    "1": "Medium",
+    "2": "High"
+  },
+  "medians": {
+    "age": 24.0,
+    "bmi": 22.988,
+    "training_intensity": 6.4119,
+    "training_duration": 87.8354,
+    "training_load": 645.2253,
+    "heart_rate": 72.3041,
+    "sleep_quality": 5.7557,
+    "recovery_score": 54.4214,
+    "fatigue_index": 57.3402
+  },
+  "ranges": {
+    "age": [
+      18.0,
+      34.0
+    ],
+    "bmi": [
+      18.5,
+      28.3
+    ],
+    "training_intensity": [
+      2.0,
+      10.0
+    ],
+    "training_duration": [
+      30.0,
+      180.0
+    ],
+    "training_load": [
+      150.0,
+      2632.638
+    ],
+    "heart_rate": [
+      40.0,
+      159.27
+    ],
+    "sleep_quality": [
+      1.156,
+      10.0
+    ],
+    "recovery_score": [
+      8.903,
+      98.0
+    ],
+    "fatigue_index": [
+      15.0,
+      270.193
+    ]
+  },
+  "model_type": "RandomForest",
+  "sklearn_version": "1.8.0"
+}

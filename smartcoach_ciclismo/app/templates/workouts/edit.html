@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Edit Workout - SmartCoach{% endblock %}
+{% block content %}
+{% set v = values if values else {
+    'date': workout.date.isoformat(),
+    'duration_min': workout.duration_min,
+    'distance_km': workout.distance_km,
+    'elevation_gain_m': workout.elevation_gain_m or 0,
+    'rpe': workout.rpe,
+    'perceived_fatigue': workout.perceived_fatigue or 1,
+    'notes': workout.notes or ''} %}
+<div class="row justify-content-center sc-action">
+    <div class="col-xl-10">
+        <div class="card">
+            <div class="card-body">
+                <h1 class="sc-h1 mb-1">Edit workout</h1>
+                <p class="sc-note mb-4">Update the details of your session from {{ workout.date.strftime('%b %d, %Y') }}.</p>
+                {% set submit_label = 'Save changes' %}
+                {% include 'workouts/_form.html' %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}<script src="{{ url_for('static', filename='js/workout_form.js') }}"></script>{% endblock %}

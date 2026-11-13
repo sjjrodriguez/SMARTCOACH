@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Create Account - SmartCoach{% endblock %}
+{% block content %}
+<div class="row justify-content-center sc-auth">
+    <div class="col-md-7 col-lg-5">
+        <div class="card">
+            <div class="card-header">Create your account</div>
+            <div class="card-body p-4">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="full_name" class="form-label">Full name</label>
+                        <input type="text" id="full_name" name="full_name" class="form-control"
+                               autocomplete="name" autofocus required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email address</label>
+                        <input type="email" id="email" name="email" class="form-control"
+                               autocomplete="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" id="password" name="password" class="form-control"
+                               minlength="8" autocomplete="new-password" aria-describedby="password-help" required>
+                        <div id="password-help" class="form-text">At least 8 characters.</div>
+                    </div>
+                    <p class="sc-note mb-4">
+                        We'll ask for your training and physical data later, when you generate your plan.
+                    </p>
+                    <button type="submit" class="btn btn-primary w-100">Sign Up</button>
+                </form>
+            </div>
+            <div class="card-footer text-center bg-transparent py-3">
+                Already have an account? <a href="{{ url_for('auth.login') }}">Sign in</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

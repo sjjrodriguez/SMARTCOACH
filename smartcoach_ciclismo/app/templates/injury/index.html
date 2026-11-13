@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Injury Tracking - SmartCoach{% endblock %}
+{% block content %}
+<header class="sc-page-header mb-4">
+    <div>
+        <h1 class="sc-h1 mb-1">Injury tracking</h1>
+        <p class="text-secondary mb-0">Your injury checks from the last 30 days. They are created automatically when you log a workout.</p>
+    </div>
+    <div class="sc-page-actions">
+        <a href="{{ url_for('workouts.create_workout') }}" class="btn btn-primary">Log workout</a>
+        <a href="{{ url_for('injury.profile') }}" class="btn btn-outline-secondary">Cyclist profile</a>
+    </div>
+</header>
+{% if checkins %}
+<section class="sc-panel mb-3" aria-labelledby="injury-chart-title">
+    <h2 class="sc-h2" id="injury-chart-title">Recovery vs. fatigue</h2>
+    <div class="sc-chart">
+        <canvas id="injuryChart" role="img"
+                aria-label="Line chart comparing your recovery and fatigue scores over the last 30 days"></canvas>
+    </div>
+</section>
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th scope="col">Date</th>
+                    <th scope="col">Risk</th>
+                    <th scope="col">Recovery</th>
+                    <th scope="col">Fatigue</th>
+                    <th scope="col">Sleep</th>
+                    <th scope="col">Load (RPE &times; min)</th>
+                    <th scope="col"><span class="visually-hidden">Details</span></th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for c in checkins %}
+                <tr>
+                    <td class="text-nowrap">{{ c.date.strftime('%b %d, %Y') }}</td>
+                    <td><span class="badge" style="background: var(--sc-{{ level_css[c.risk_level] }}-bar); color: var(--sc-{{ level_css[c.risk_level] }}-on);">{{ risk_text[c.risk_level][0] }}</span></td>
+                    <td>{{ c.recovery_score }}</td>
+                    <td>{{ c.fatigue_index }}</td>
+                    <td>{{ c.sleep_quality }}</td>
+                    <td>{{ c.training_load }}</td>
+                    <td class="text-end"><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('injury.result', checkin_id=c.id) }}">View</a></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<section class="sc-panel text-center py-5">
+    <h2 class="sc-h2">No injury checks in the last 30 days</h2>
+    <p class="text-secondary">Log a workout and fill in the &ldquo;Injury check&rdquo; tab: your risk will show up here.</p>
+    <a href="{{ url_for('workouts.create_workout') }}" class="btn btn-primary">Log a workout</a>
+</section>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+{% if checkins %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+const d = {{ chart|tojson }};
+new Chart(document.getElementById('injuryChart'), {
+  type: 'line',
+  data: { labels: d.labels, datasets: [
+    { label: 'Recovery', data: d.recovery, borderColor: '#1f8a4c', backgroundColor: '#1f8a4c', tension: .3 },
+    { label: 'Fatigue', data: d.fatigue, borderColor: '#c8352b', backgroundColor: '#c8352b', tension: .3 } ] },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      y: { min: 0, max: 100, title: { display: true, text: 'Score (0-100)' } },
+      x: { title: { display: true, text: 'Date' } }
+    }
+  }
+});
+</script>
+{% endif %}
+{% endblock %}
