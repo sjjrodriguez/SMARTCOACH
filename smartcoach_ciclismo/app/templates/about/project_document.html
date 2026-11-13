@@ -7,9 +7,12 @@
     <p class="sc-eyebrow mb-2">Project documentation &middot; Step 3 of 3</p>
     <h1 class="sc-h1 mb-2">Project document</h1>
     <p>Summary of the three models, how they were evaluated and the changes made in this iteration.</p>
-    <a class="btn btn-primary mt-3" href="{{ url_for('static', filename='docs/Propuesta_SmartCoach.docx') }}" download>
-        Download the project proposal (Word)
-    </a>
+    <div class="d-flex flex-wrap gap-2 mt-3">
+        <a class="btn btn-primary" href="{{ url_for('main.dashboard') }}">Open SmartCoach &rarr;</a>
+        <a class="btn btn-outline-light" href="{{ url_for('static', filename='docs/Propuesta_SmartCoach.docx') }}" download>
+            Download the project proposal (Word)
+        </a>
+    </div>
 </header>
 
 <section class="sc-section" id="models" aria-labelledby="models-title">

@@ -13,9 +13,8 @@ main_bp = Blueprint('main', __name__)
 
 @main_bp.route('/')
 def index():
-    if current_user.is_authenticated:
-        return redirect(url_for('main.dashboard'))
-    return redirect(url_for('auth.login'))
+    """The documentation comes first; the application is reached with the "Open SmartCoach" button."""
+    return redirect(url_for('main.phases'))
 
 
 @main_bp.route('/dashboard')
@@ -34,19 +33,19 @@ def dashboard():
 @main_bp.route('/phases')
 def phases():
     """Public page 1 of 3: CRISP-DM / CRISP-ML(Q) phases."""
-    return render_template('about/phases.html', data=build_methodology_data())
+    return render_template('about/phases.html', data=build_methodology_data(), docs_mode=True)
 
 
 @main_bp.route('/architecture')
 def architecture():
     """Public page 2 of 3: the 4-layer architecture."""
-    return render_template('about/architecture.html', data=build_methodology_data())
+    return render_template('about/architecture.html', data=build_methodology_data(), docs_mode=True)
 
 
 @main_bp.route('/project-document')
 def project_document():
     """Public page 3 of 3: models, evaluation and changes."""
-    return render_template('about/project_document.html', data=build_methodology_data())
+    return render_template('about/project_document.html', data=build_methodology_data(), docs_mode=True)
 
 
 def _today_session():

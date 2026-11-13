@@ -380,3 +380,6 @@ details.sc-note summary { cursor: pointer; }
 .sc-flow li { counter-increment: step; background: var(--sc-surface); border: 1px solid var(--sc-line); border-radius: var(--sc-radius); padding: 1rem; font-size: .95rem; }
 .sc-flow li::before { content: counter(step); display: inline-grid; place-items: center; width: 1.75rem; height: 1.75rem; border-radius: 50%; background: var(--sc-primary); color: #fff; font-weight: 700; margin-bottom: .5rem; }
 .sc-flow strong { display: block; }
+
+/* ---------- Documentation section (shown before the application) ---------- */
+.sc-docs-tag { color: #9fb0c6; font-weight: 500; font-size: .85rem; margin-left: .35rem; }
