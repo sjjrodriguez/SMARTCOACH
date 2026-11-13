@@ -6,5 +6,4 @@ venv/
 .venv/
 
 instance/
-.env
 *.db
