@@ -6,44 +6,104 @@
 <header class="sc-method-hero">
     <p class="sc-eyebrow mb-2">Project documentation &middot; Step 3 of 3</p>
     <h1 class="sc-h1 mb-2">Project document</h1>
-    <p>Summary of the three models, how they were evaluated and the changes made in this iteration.</p>
+    <p>The three models of SmartCoach in plain words: what each one answers, what it learned from, how far to trust it,
+        and what changed in this iteration.</p>
     <div class="d-flex flex-wrap gap-2 mt-3">
         <a class="btn btn-primary" href="{{ url_for('main.dashboard') }}">Open SmartCoach &rarr;</a>
         <a class="btn btn-outline-light" href="{{ url_for('static', filename='docs/Propuesta_SmartCoach.docx') }}" download>
             Download the project proposal (Word)
         </a>
     </div>
+    <nav class="sc-method-nav" aria-label="On this page">
+        <a href="#models">The three models</a>
+        <a href="#random-forest">How they decide</a>
+        <a href="#results">Results</a>
+        <a href="#changes">Changes</a>
+    </nav>
 </header>
 
 <section class="sc-section" id="models" aria-labelledby="models-title">
     <h2 class="sc-h2" id="models-title">The three models</h2>
-    <div class="card">
-        <div class="table-responsive">
-            <table class="table align-middle mb-0">
-                <thead>
-                    <tr><th scope="col"></th><th scope="col">Model</th><th scope="col">Output</th>
-                        <th scope="col">Training data</th><th scope="col">Algorithm</th><th scope="col">Used in</th></tr>
-                </thead>
-                <tbody>
-                {% for m in data.models %}
-                    <tr>
-                        <th scope="row">{{ m.key }}</th>
-                        <td class="fw-semibold">{{ m.name }}</td>
-                        <td>{{ m.output }}</td>
-                        <td>{{ m.data }}</td>
-                        <td>{{ m.algo }}</td>
-                        <td>{{ m.used }}</td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
+    <p class="sc-lead">Every question a cyclist asks is answered by one model. They appear at different moments of the application.</p>
+
+    <ol class="sc-pd-journey">
+        <li><strong>Start: generate your plan</strong><small>Model A picks your level.</small></li>
+        <li><strong>After each ride: log the workout</strong><small>Model B estimates today's injury risk.</small></li>
+        <li><strong>Any time: cyclist profile</strong><small>Model C compares you with injured cyclists.</small></li>
+    </ol>
+
+    <div class="sc-pd-models">
+        {% for m in data.models %}
+        <article class="sc-pd-model">
+            <header class="sc-pd-model__head">
+                <span class="sc-pd-model__key" aria-hidden="true">{{ m.key }}</span>
+                <div>
+                    <h3>Model {{ m.key }}: {{ m.name }}</h3>
+                    <p class="sc-pd-model__q">&ldquo;{{ m.question }}&rdquo;</p>
+                </div>
+            </header>
+            <dl class="sc-pd-rows">
+                <div><dt>Learned from</dt><dd>{{ m.data_plain }} <span class="text-secondary">({{ m.data }})</span></dd></div>
+                <div><dt>Receives</dt>
+                    <dd><ul class="sc-pd-chips">{% for i in m.inputs %}<li>{{ i }}</li>{% endfor %}</ul></dd></div>
+                <div><dt>Answers</dt>
+                    <dd><ul class="sc-pd-chips sc-pd-chips--out">
+                        {% for o in m.output.split(' / ') %}<li {% if m.key == 'B' %}class="is-{{ ['low', 'med', 'high'][loop.index0] }}"{% endif %}>{{ o }}</li>{% endfor %}
+                    </ul></dd></div>
+                <div><dt>Method</dt><dd><strong>{{ m.algo }}.</strong> {{ m.algo_plain }}</dd></div>
+                <div><dt>Used in</dt><dd><a href="{{ url_for(m.used_endpoint) }}">{{ m.used }}</a></dd></div>
+            </dl>
+            <footer class="sc-pd-trust sc-pd-trust--{{ m.trust.tone }}">
+                <div class="sc-pd-trust__top">
+                    <strong>{{ m.trust.label }}</strong>
+                    <span>
+                        {% if m.key == 'A' %}no metrics saved yet
+                        {% elif m.key == 'B' and inj %}macro-F1 {{ '%.2f'|format(inj.macro_f1) if inj.macro_f1 is not none else 'n/a' }}
+                        {% elif m.key == 'C' and prof %}accuracy {{ '%.2f'|format(prof.accuracy) }} &middot; F1 {{ '%.2f'|format(prof.f1) }}
+                        {% else %}metrics not available{% endif %}
+                    </span>
+                </div>
+                <p>{{ m.trust.note }}</p>
+            </footer>
+        </article>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="sc-section" id="random-forest" aria-labelledby="rf-title">
+    <h2 class="sc-h2" id="rf-title">How they decide: a Random Forest in 30 seconds</h2>
+    <p class="sc-lead">The three models use the same algorithm, so it is worth understanding once. A Random Forest is many small decision trees that vote.</p>
+    <div class="sc-pd-rf">
+        <ol class="sc-pd-rf__steps">
+            <li><strong>Every tree sees a different slice</strong>
+                <span>Each tree learns from a random sample of the cyclists and a random subset of the variables, so the trees do not all think alike.</span></li>
+            <li><strong>Every tree votes</strong>
+                <span>Given a new cyclist, each tree answers with one level on its own.</span></li>
+            <li><strong>The votes become the percentages you see</strong>
+                <span>The most voted level is the answer, and its share of votes is the probability the application shows.</span></li>
+        </ol>
+        <div class="sc-cr-panel">
+            <h3 class="sc-cr-side-h">Illustration with made-up numbers</h3>
+            <div class="sc-pd-votes" role="img" aria-label="Five trees vote: three Moderate, one Advanced, one Beginner">
+                <div class="sc-pd-vote sc-pd-vote--win"><span>Tree 1</span><b>Moderate</b></div>
+                <div class="sc-pd-vote sc-pd-vote--win"><span>Tree 2</span><b>Moderate</b></div>
+                <div class="sc-pd-vote"><span>Tree 3</span><b>Advanced</b></div>
+                <div class="sc-pd-vote sc-pd-vote--win"><span>Tree 4</span><b>Moderate</b></div>
+                <div class="sc-pd-vote"><span>Tree 5</span><b>Beginner</b></div>
+            </div>
+            <ul class="sc-bars">
+                <li><span>Moderate</span><div class="progress" role="progressbar" aria-label="Moderate share of votes" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar" style="width: 60%"></div></div><span class="pct">60%</span></li>
+                <li><span>Advanced</span><div class="progress" role="progressbar" aria-label="Advanced share of votes" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar" style="width: 20%"></div></div><span class="pct">20%</span></li>
+                <li><span>Beginner</span><div class="progress" role="progressbar" aria-label="Beginner share of votes" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar" style="width: 20%"></div></div><span class="pct">20%</span></li>
+            </ul>
+            <p class="sc-note">The real models use 100 to 300 trees. Model B also gives rare classes extra weight ("balanced").</p>
         </div>
     </div>
 </section>
 
-
-<section class="sc-section" id="evaluation" aria-labelledby="eval-title">
-    <h2 class="sc-h2" id="eval-title">Evaluation</h2>
+<section class="sc-section" id="results" aria-labelledby="eval-title">
+    <h2 class="sc-h2" id="eval-title">Results: how well do they work?</h2>
+    <p class="sc-lead">Honest numbers, with what each one means.</p>
     <div class="row g-3">
         <div class="col-lg-7">
             <div class="sc-panel">
@@ -54,6 +114,11 @@
                     <div class="sc-tile"><dt>Accuracy</dt><dd>{{ '%.2f'|format(inj.accuracy) if inj.accuracy is not none else 'n/a' }}</dd><small>test set</small></div>
                     <div class="sc-tile"><dt>Baseline</dt><dd>{{ '%.2f'|format(inj.baseline) if inj.baseline is not none else 'n/a' }}</dd><small>always predict the most common class</small></div>
                     <div class="sc-tile"><dt>High risk found</dt><dd>{{ (inj.high_recall * 100)|round|int ~ '%' if inj.high_recall is not none else 'n/a' }}</dd><small>of real high-risk cases</small></div>
+                </dl>
+                <dl class="sc-pd-read">
+                    <div><dt>Macro-F1</dt><dd>One score from 0 to 1 that counts Low, Medium and High equally, so rare classes are not ignored.</dd></div>
+                    <div><dt>Accuracy vs baseline</dt><dd>The baseline is what you would get by always answering the most common level. Accuracy below it means the signal is weak.</dd></div>
+                    <div><dt>High risk found</dt><dd>Of all the really high-risk cases, the share the model flagged. It is the costliest case to miss.</dd></div>
                 </dl>
                 {% if inj.features %}
                 <h4 class="h6 mt-4 mb-2">What the model relies on most</h4>
@@ -78,9 +143,9 @@
         </div>
         <div class="col-lg-5">
             <div class="sc-panel">
-                <h3 class="h6 mb-3">Other models</h3>
+                <h3 class="h6 mb-3">The other two models</h3>
                 <p class="mb-2"><strong>Model C, cyclist profile:</strong>
-                    {% if prof %}accuracy {{ '%.2f'|format(prof.accuracy) }}, F1 {{ '%.2f'|format(prof.f1) }}.{% else %}n/a.{% endif %}</p>
+                    {% if prof %}accuracy {{ '%.2f'|format(prof.accuracy) }}{% if prof.baseline is not none %} (baseline {{ '%.2f'|format(prof.baseline) }}){% endif %}, F1 {{ '%.2f'|format(prof.f1) }}{% if prof.n_test %}, tested on only {{ prof.n_test }} cyclists{% endif %}.{% else %}n/a.{% endif %}</p>
                 <p class="mb-3"><strong>Model A, plan classifier:</strong> no metrics saved yet.</p>
                 <div class="sc-phase__qa">
                     <strong>Honest reading.</strong> For the injury model, accuracy is lower than the baseline of always
@@ -93,24 +158,36 @@
     </div>
 </section>
 
-
 <section class="sc-section" id="changes" aria-labelledby="changes-title">
     <h2 class="sc-h2" id="changes-title">Changes in this iteration</h2>
-    <div class="card">
-        <div class="table-responsive">
-            <table class="table align-middle mb-0">
-                <thead><tr><th scope="col">Requirement</th><th scope="col">What was done</th></tr></thead>
-                <tbody>
-                    <tr><td>Remove the Daily injury check-in page</td><td>Route, template and every link to it were removed; those buttons now lead to Log workout.</td></tr>
-                    <tr><td>Remove the estimated TSS</td><td>Removed from the form, summary, list, server calculation and dashboard text. Load is always RPE &times; minutes.</td></tr>
-                    <tr><td>Workout form in 2 tabs</td><td>1. Workout and 2. Injury check. Editing a workout keeps a single tab.</td></tr>
-                    <tr><td>Injury check filled in from the workout</td><td>RPE, duration and fatigue come from the workout; the check is created automatically on save.</td></tr>
-                    <tr><td>Documentation before the application</td><td>The site opens on a documentation section: a CRISP-DM drop-down menu with one page per phase, Architecture and Project document. The Open SmartCoach button leads to the application.</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
+    <ol class="sc-cr-flow">
+        <li class="sc-cr-flow--done"><span class="sc-cr-flow__n">&#10003;</span>
+            <div><h4>Daily injury check-in page removed</h4>
+                <p>Route, template and every link to it were removed; those buttons now lead to Log workout.</p></div></li>
+        <li class="sc-cr-flow--done"><span class="sc-cr-flow__n">&#10003;</span>
+            <div><h4>Estimated TSS removed</h4>
+                <p>Removed from the form, summary, list, server calculation and dashboard text. Load is always RPE &times; minutes.</p></div></li>
+        <li class="sc-cr-flow--done"><span class="sc-cr-flow__n">&#10003;</span>
+            <div><h4>Workout form in 2 tabs</h4>
+                <p>1. Workout and 2. Injury check. Editing a workout keeps a single tab.</p></div></li>
+        <li class="sc-cr-flow--done"><span class="sc-cr-flow__n">&#10003;</span>
+            <div><h4>Injury check filled in from the workout</h4>
+                <p>RPE, duration and fatigue come from the workout; the check is created automatically on save.</p></div></li>
+        <li class="sc-cr-flow--done"><span class="sc-cr-flow__n">&#10003;</span>
+            <div><h4>Documentation before the application</h4>
+                <p>The site opens on a documentation section: a CRISP-DM drop-down menu with one page per phase, Architecture and Project document. The Open SmartCoach button leads to the application.</p></div></li>
+        <li class="sc-cr-flow--done"><span class="sc-cr-flow__n">&#10003;</span>
+            <div><h4>Project document made clearer</h4>
+                <p>One card per model, a visual explanation of the Random Forest, and the results explained in plain words.</p></div></li>
+        <li class="sc-cr-flow--done"><span class="sc-cr-flow__n">&#10003;</span>
+            <div><h4>Safer configuration and validation, same behavior</h4>
+                <p>The database address and secret key come from the .env file, every workout field is checked on the server,
+                    the login redirect only accepts internal addresses, and errors are logged instead of shown to the user.</p></div></li>
+    </ol>
 </section>
 
-<div class="d-flex justify-content-between mt-2 mb-4"><a class="btn btn-outline-secondary" href="{{ url_for('main.architecture') }}">&larr; Architecture</a></div>
+<div class="d-flex justify-content-between mt-2 mb-4">
+    <a class="btn btn-outline-secondary" href="{{ url_for('main.architecture') }}">&larr; Architecture</a>
+    <a class="btn btn-primary" href="{{ url_for('main.dashboard') }}">Open SmartCoach &rarr;</a>
+</div>
 {% endblock %}

@@ -1,4 +1,6 @@
-"""Content for the Methodology page: CRISP-DM / CRISP-ML(Q) phases and the 4-layer architecture.
+"""Content for the Architecture and Project document pages: the three models and the 4-layer architecture.
+
+The CRISP-DM / CRISP-ML(Q) phases live in crisp_content.py.
 
 Pure Python (no Flask, no database). The model metrics are read from the JSON files that the
 training scripts in ml_engine/ write, so the page never shows numbers that are out of date.
@@ -19,49 +21,37 @@ FEATURE_LABELS = {
     'training_duration': 'Duration',
 }
 
-# status: done / partial / pending
-PHASES = [
-    {'n': 1, 'name': 'Business understanding', 'status': 'done',
-     'did': ['Goal: give each cyclist a plan that fits their level and help prevent injuries by tracking load and recovery.',
-             'Success: the cyclist gets a plan, logs workouts and sees an understandable injury risk (traffic light, probabilities, tips).'],
-     'qa': 'The output is guidance, not a medical diagnosis. A false "low risk" is the costliest error, so probabilities are shown, not only the label.'},
-    {'n': 2, 'name': 'Data understanding', 'status': 'done',
-     'did': ['Three sources: datos.gov.co supported athletes (demographics only), the Kaggle Multimodal Sports Injury Dataset (15,420 rows) and a cyclist questionnaire (DATA.xlsx).',
-             'Exploratory analysis and data-quality problems are documented in ml_engine/notebooks/exploratory_data.ipynb.'],
-     'qa': 'Each source has a documentation sheet in the notebook. The injury classes are imbalanced (9,868 / 3,238 / 2,314).'},
-    {'n': 3, 'name': 'Data preparation', 'status': 'done',
-     'did': ['Cleaning and filtering of the national athletes registry down to cycling records.',
-             'The injury model only uses variables a cyclist can report: RPE, duration, load, heart rate, sleep, recovery and fatigue.',
-             'Missing values are imputed inside each scikit-learn Pipeline.'],
-     'qa': 'A data-leakage check (splitting by athlete or not) is in the notebook, and the feature order is stored in injury_features.json so the app builds the same vector used in training.'},
-    {'n': 4, 'name': 'Modeling', 'status': 'done',
-     'did': ['Plan classifier: Random Forest (100 trees, depth 10), stratified 80/20 split.',
-             'Injury risk: balanced Random Forest in a Pipeline, stratified 5-fold cross-validation.',
-             'Cyclist profile: Random Forest with imputation and One-Hot encoding.'],
-     'qa': 'Random Forest and XGBoost were compared in the notebook.'},
-    {'n': 5, 'name': 'Evaluation', 'status': 'partial',
-     'did': ['Injury risk and cyclist profile metrics are saved as JSON and shown below.',
-             'Macro-F1 is used instead of accuracy because the classes are imbalanced.'],
-     'qa': 'Limits are stated openly: the injury model accuracy is below the majority-class baseline, and the plan classifier was trained on synthetic data and has no saved metrics yet.'},
-    {'n': 6, 'name': 'Deployment', 'status': 'done',
-     'did': ['Models are exported with joblib and loaded lazily by the Flask services.',
-             'PostgreSQL (Supabase) stores users, workouts, plans and injury checks; new columns are added safely at startup.'],
-     'qa': 'Inputs are validated against fixed ranges, and a workout is always saved even if the injury model fails.'},
-    {'n': 7, 'name': 'Monitoring and maintenance', 'status': 'pending', 'ml_q': True,
-     'did': ['Every prediction is already stored (risk level and probabilities).',
-             'Next: compare predictions with injuries actually reported, retrain with real data, version the model files and watch for data drift.'],
-     'qa': 'This extra phase is what CRISP-ML(Q) adds to CRISP-DM. It is planned, not implemented yet.'},
-]
-
-STATUS_LABEL = {'done': 'Done', 'partial': 'Partial', 'pending': 'Planned'}
-
 MODELS = [
-    {'key': 'A', 'name': 'Plan classifier', 'output': 'Beginner / Moderate / Advanced',
-     'data': '1,000 synthetic cyclist records', 'algo': 'Random Forest', 'used': 'Generate plan'},
-    {'key': 'B', 'name': 'Injury risk', 'output': 'Low / Medium / High',
-     'data': 'Kaggle sports injury dataset, 15,420 rows', 'algo': 'Balanced Random Forest', 'used': 'Workout injury check'},
-    {'key': 'C', 'name': 'Cyclist profile', 'output': 'Probability of a previous injury',
-     'data': 'Cyclist questionnaire (42 columns)', 'algo': 'Random Forest', 'used': 'Cyclist profile'},
+    {'key': 'A', 'name': 'Plan classifier', 'question': 'Which plan level fits me?',
+     'output': 'Beginner / Moderate / Advanced',
+     'inputs': ['Age', 'Weight', 'Hours per week', 'Resting heart rate', 'Accumulated TSS'],
+     'data': '1,000 synthetic cyclist records',
+     'data_plain': 'Made-up cyclists generated from simple rules for each level.',
+     'algo': 'Random Forest',
+     'algo_plain': '100 decision trees vote on the level.',
+     'used': 'Generate plan', 'used_endpoint': 'plans.generate_plan',
+     'trust': {'label': 'Prototype', 'tone': 'warn',
+               'note': 'It learned from synthetic data, so it repeats the rules used to create it, not real cyclists. No metrics are saved yet.'}},
+    {'key': 'B', 'name': 'Injury risk', 'question': 'How risky is today\'s training?',
+     'output': 'Low / Medium / High',
+     'inputs': ['Effort (RPE)', 'Duration', 'Load (RPE x min)', 'Heart rate (optional)', 'Sleep quality', 'Recovery', 'Fatigue'],
+     'data': 'Kaggle sports injury dataset, 15,420 rows',
+     'data_plain': 'Records of athletes from several sports (not only cycling) with load, sleep, recovery and injury risk.',
+     'algo': 'Balanced Random Forest',
+     'algo_plain': '150 decision trees vote. Rare classes get extra weight so they are not ignored.',
+     'used': 'Workout injury check', 'used_endpoint': 'workouts.create_workout',
+     'trust': {'label': 'Guidance only', 'tone': 'warn',
+               'note': 'Weak signal: accuracy is below the "always answer Low" baseline. Its strength is catching high-risk cases.'}},
+    {'key': 'C', 'name': 'Cyclist profile', 'question': 'Does my profile look like injured cyclists?',
+     'output': 'Probability of a previous injury',
+     'inputs': ['Age', 'Height', 'Weight', 'Rides, hours and km per week', 'Years of experience', 'Optional: bike, terrain, coach, comfort'],
+     'data': 'Cyclist questionnaire (739 cyclists, 42 questions)',
+     'data_plain': 'Answers of real cyclists, including whether they had been injured before.',
+     'algo': 'Random Forest',
+     'algo_plain': '300 decision trees vote. Unanswered questions are filled in automatically.',
+     'used': 'Cyclist profile', 'used_endpoint': 'injury.profile',
+     'trust': {'label': 'Guidance only', 'tone': 'warn',
+               'note': 'Small sample and modest scores. It tells you whether your profile resembles that of injured cyclists, nothing more.'}},
 ]
 
 LAYERS = [
@@ -154,12 +144,20 @@ def _profile_metrics():
     m = _load_json('metrics', 'injury_metrics.json')
     if not m:
         return None
-    return {'accuracy': m.get('accuracy'), 'f1': m.get('f1_score')}
+    out = {'accuracy': m.get('accuracy'), 'f1': m.get('f1_score'),
+           'precision': m.get('precision'), 'recall': m.get('recall'), 'n_test': None, 'baseline': None}
+    try:
+        cm = m['confusion_matrix']
+        total = sum(sum(row) for row in cm)
+        out['n_test'] = total
+        out['baseline'] = max(sum(row) for row in cm) / total
+    except (KeyError, TypeError, ZeroDivisionError):
+        pass
+    return out
 
 
 def build_methodology_data():
     return {
-        'phases': PHASES, 'status_label': STATUS_LABEL, 'models': MODELS,
-        'layers': LAYERS, 'flow': FLOW,
+        'models': MODELS, 'layers': LAYERS, 'flow': FLOW,
         'injury': _injury_metrics(), 'profile': _profile_metrics(), 'algo_compare': _algo_compare(),
     }

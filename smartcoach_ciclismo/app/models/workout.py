@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date
 from app import db
 
 class Workout(db.Model):
@@ -7,7 +7,7 @@ class Workout(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    date = db.Column(db.Date, nullable=False, default=datetime.utcnow)
+    date = db.Column(db.Date, nullable=False, default=date.today)
     duration_min = db.Column(db.Integer, nullable=False)
     distance_km = db.Column(db.Float, nullable=False)
     elevation_gain_m = db.Column(db.Float, nullable=True, default=0.0)

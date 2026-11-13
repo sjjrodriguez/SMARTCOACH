@@ -1,5 +1,5 @@
 from datetime import date, timedelta
-from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
+from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, current_app
 from flask_login import login_required, current_user
 from app import db
 from app.models.injury import InjuryCheckin
@@ -57,7 +57,7 @@ def _parse_plan_form(form):
         raw = (form.get(name) or '').strip().replace(',', '.')
         try:
             v = cast(float(raw)) if cast is int else cast(raw)
-        except ValueError:
+        except (ValueError, OverflowError):   # "inf" would raise OverflowError in int()
             errors.append(f'{label}: enter a number.')
             continue
         if not lo <= v <= hi:
@@ -147,8 +147,9 @@ def generate_plan():
             age=age, weight=values['weight_kg'],
             weekly_hours=values['weekly_hours'],
             resting_hr=values['resting_heart_rate'], tss=values['tss_acumulado'])
-    except Exception as e:
-        flash(f'Could not run the model: {e}', 'danger')
+    except Exception:
+        current_app.logger.exception('Could not run the plan model')
+        flash('Could not generate your plan right now. Please try again later.', 'danger')
         return render_template('plans/generate.html', values=request.form, **_birth_limits()), 500
 
     plan = TrainingPlan(

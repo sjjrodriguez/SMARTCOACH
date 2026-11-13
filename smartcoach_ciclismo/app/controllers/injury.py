@@ -1,5 +1,5 @@
 from datetime import date, timedelta
-from flask import Blueprint, render_template, request, flash, abort
+from flask import Blueprint, render_template, request, flash, abort, current_app
 from flask_login import login_required, current_user
 from app import db
 from app.models.injury import InjuryCheckin
@@ -40,8 +40,9 @@ def profile():
     except ValidationError as e:
         flash(str(e), 'danger')
         return render_template('injury/profile.html', values=request.form, result=None), 400
-    except Exception as e:
-        flash(f'Could not calculate the profile result: {e}', 'danger')
+    except Exception:
+        current_app.logger.exception('Could not calculate the cyclist profile result')
+        flash('Could not calculate the profile result right now. Please try again later.', 'danger')
         return render_template('injury/profile.html', values=request.form, result=None), 500
     return render_template('injury/profile.html', values=request.form, result=result)
 

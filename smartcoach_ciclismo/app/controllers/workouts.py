@@ -31,6 +31,49 @@ def _planned_session(plan, iso_date):
     return {'plan_id': plan.id, 'date': day['date'], 'label': day['label'], 'title': spec['title'],
             'effort': spec['effort'], 'rpe': spec['rpe'], 'minutes': day['minutes'], 'km': day['km']}
 
+def _number(form, name, label, lo, hi, whole=False, default=None):
+    """One numeric field of the workout form, checked against the same limits the form uses.
+
+    The browser enforces min/max, but the server must not trust it. Missing optional fields
+    return `default`; anything else out of range raises ValidationError (this also rejects nan/inf).
+    """
+    raw = (form.get(name) or '').strip().replace(',', '.')
+    if raw == '':
+        if default is None:
+            raise ValidationError(f'{label} is required.')
+        return default
+    try:
+        value = float(raw)
+    except ValueError:
+        raise ValidationError(f'{label}: enter a number.')
+    if not lo <= value <= hi:
+        raise ValidationError(f'{label} must be between {lo:g} and {hi:g}.')
+    if whole and value != int(value):
+        raise ValidationError(f'{label} must be a whole number.')
+    return int(value) if whole else value
+
+
+def _parse_workout_form(form, fallback_date=None):
+    """Validate the workout form and return clean values. Raises ValidationError."""
+    date_str = (form.get('date') or '').strip()
+    if date_str:
+        try:
+            workout_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            raise ValidationError('Date: enter a valid date.')
+    else:
+        workout_date = fallback_date or date.today()
+    return {
+        'date': workout_date,
+        'duration_min': _number(form, 'duration_min', 'Duration', 1, 1440, whole=True),
+        'distance_km': _number(form, 'distance_km', 'Distance', 0, 1000),
+        'elevation_gain_m': _number(form, 'elevation_gain_m', 'Elevation gain', 0, 20000, default=0.0),
+        'rpe': _number(form, 'rpe', 'Effort (RPE)', 1, 10, whole=True),
+        'perceived_fatigue': _number(form, 'perceived_fatigue', 'Fatigue', 1, 10, whole=True, default=1),
+        'notes': (form.get('notes') or '')[:500],
+    }
+
+
 def _check_data(form, duration_min, rpe, fatigue):
     """Inputs for the injury check, taken from the workout form.
 
@@ -83,27 +126,13 @@ def list_workouts():
 def create_workout():
     if request.method == 'POST':
         try:
-            date_str = request.form.get('date')
-            workout_date = datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else datetime.utcnow().date()
-            duration_min = int(request.form.get('duration_min'))
-            distance_km = float(request.form.get('distance_km'))
-            elevation_gain_m = float(request.form.get('elevation_gain_m') or 0.0)
-            rpe = int(request.form.get('rpe'))
-            fatigue = int(request.form.get('perceived_fatigue') or 1)
-            notes = request.form.get('notes', '')
+            clean = _parse_workout_form(request.form)
+            workout_date = clean['date']
             # Validate the injury-check answers first so nothing is half saved.
-            check_data = _check_data(request.form, duration_min, rpe, fatigue)
+            check_data = _check_data(request.form, clean['duration_min'], clean['rpe'],
+                                     clean['perceived_fatigue'])
 
-            new_workout = Workout(
-                user_id=current_user.id,
-                date=workout_date,
-                duration_min=duration_min,
-                distance_km=distance_km,
-                elevation_gain_m=elevation_gain_m,
-                rpe=rpe,
-                perceived_fatigue=fatigue,
-                notes=notes
-            )
+            new_workout = Workout(user_id=current_user.id, **clean)
             db.session.add(new_workout)
             db.session.commit()
 
@@ -146,24 +175,22 @@ def create_workout():
 @workouts_bp.route('/<int:workout_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_workout(workout_id):
-    workout = Workout.query.get_or_404(workout_id)
+    workout = db.get_or_404(Workout, workout_id)
     if workout.user_id != current_user.id:
         abort(403)
 
     if request.method == 'POST':
         try:
-            date_str = request.form.get('date')
-            workout.date = datetime.strptime(date_str, '%Y-%m-%d').date() if date_str else workout.date
-            workout.duration_min = int(request.form.get('duration_min'))
-            workout.distance_km = float(request.form.get('distance_km'))
-            workout.elevation_gain_m = float(request.form.get('elevation_gain_m') or 0.0)
-            workout.rpe = int(request.form.get('rpe'))
-            workout.perceived_fatigue = int(request.form.get('perceived_fatigue') or 1)
-            workout.notes = request.form.get('notes', '')
+            clean = _parse_workout_form(request.form, fallback_date=workout.date)
+            for field, value in clean.items():
+                setattr(workout, field, value)
 
             db.session.commit()
             flash('Workout updated successfully.', 'success')
             return redirect(url_for('workouts.list_workouts'))
+        except ValidationError as e:
+            db.session.rollback()
+            flash(str(e), 'danger')
         except (TypeError, ValueError):
             db.session.rollback()
             flash('Please check the values you entered and try again.', 'danger')
@@ -179,7 +206,7 @@ def edit_workout(workout_id):
 @workouts_bp.route('/<int:workout_id>/delete', methods=['POST'])
 @login_required
 def delete_workout(workout_id):
-    workout = Workout.query.get_or_404(workout_id)
+    workout = db.get_or_404(Workout, workout_id)
     if workout.user_id != current_user.id:
         abort(403)
 

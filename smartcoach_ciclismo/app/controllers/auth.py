@@ -9,8 +9,12 @@ auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 MIN_PASSWORD = 8
 
 def _safe_next(target):
-    """Solo permite redirigir a rutas internas (evita open redirect)."""
-    if target and not urlparse(target).netloc and target.startswith('/'):
+    """Solo permite redirigir a rutas internas (evita open redirect).
+
+    Browsers treat "\\" like "/", so "/\\evil.com" would leave the site: it is rejected too.
+    """
+    if (target and target.startswith('/') and not target.startswith('//')
+            and '\\' not in target and not urlparse(target).netloc):
         return target
     return url_for('main.dashboard')
 
